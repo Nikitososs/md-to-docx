@@ -1,0 +1,292 @@
+{
+  "name": "FIT academic report (ИДЗ/практикум)",
+  "page": {
+    "width_cm": 21.0,
+    "height_cm": 29.7,
+    "top_cm": 2.0,
+    "bottom_cm": 2.0,
+    "left_cm": 3.0,
+    "right_cm": 1.5
+  },
+  "body": {
+    "font": "Times New Roman",
+    "size_pt": 14,
+    "line_spacing": 1.2,
+    "first_line_indent_cm": 1.25,
+    "space_before_pt": 0,
+    "space_after_pt": 0
+  },
+  "formatting": {
+    "italicize_latin": true,
+    "normalize_quotes_to_russian": true,
+    "convert_em_dash_to_en_dash": true
+  },
+  "structure_headings": [
+    "АННОТАЦИЯ",
+    "СОДЕРЖАНИЕ",
+    "ВВЕДЕНИЕ",
+    "ЗАКЛЮЧЕНИЕ",
+    "СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ",
+    "СПИСОК ИСПОЛЬЗУЕМОЙ ЛИТЕРАТУРЫ",
+    "СПИСОК ЛИТЕРАТУРЫ",
+    "ПРИЛОЖЕНИЯ"
+  ],
+  "bibliography_heading": "Список использованных источников",
+  "bibliography_headings": [
+    "Список использованных источников",
+    "Список используемой литературы",
+    "Список литературы"
+  ],
+  "structural_heading": {
+    "align": "center",
+    "first_line_indent_cm": 0,
+    "space_before_pt": 12,
+    "space_after_pt": 12,
+    "line_spacing": 1.2,
+    "bold": false,
+    "keep_with_next": true
+  },
+  "headings": {
+    "1": {
+      "align": "left",
+      "first_line_indent_cm": 1.25,
+      "space_before_pt": 12,
+      "space_after_pt": 12,
+      "line_spacing": 1.2,
+      "bold": true,
+      "keep_with_next": true
+    },
+    "2": {
+      "align": "left",
+      "first_line_indent_cm": 1.25,
+      "space_before_pt": 10,
+      "space_after_pt": 8,
+      "line_spacing": 1.2,
+      "bold": true,
+      "keep_with_next": true
+    },
+    "3": {
+      "align": "left",
+      "first_line_indent_cm": 1.25,
+      "space_before_pt": 8,
+      "space_after_pt": 6,
+      "line_spacing": 1.2,
+      "bold": false,
+      "keep_with_next": true
+    }
+  },
+  "captions": {
+    "figure": {
+      "pattern": "Рисунок {n} – {title}",
+      "start_number": 1,
+      "align": "center",
+      "bold": false,
+      "size_pt": 14
+    },
+    "table": {
+      "pattern": "Таблица {n} – {title}",
+      "start_number": 1,
+      "align": "left",
+      "bold": false,
+      "size_pt": 14
+    },
+    "listing": {
+      "pattern": "Листинг {n} – {title}",
+      "start_number": 1,
+      "align": "left",
+      "bold": false,
+      "size_pt": 14
+    }
+  },
+  "figure": {
+    "align": "center",
+    "first_line_indent_cm": 0,
+    "max_width_cm": 15,
+    "keep_together": true
+  },
+  "table": {
+    "style": "Table Grid",
+    "caption_align": "left",
+    "cell_align": "left",
+    "autofit": true,
+    "repeat_header": true
+  },
+  "code": {
+    "font": "DejaVu Sans",
+    "size_pt": 11,
+    "line_spacing": 1.0,
+    "left_indent_cm": 0,
+    "space_before_pt": 6,
+    "space_after_pt": 6,
+    "keep_together": true
+  },
+  "bibliography": {
+    "left_indent_cm": 0,
+    "hanging_indent_cm": 0
+  },
+  "cover": {
+    "page_break_after": true,
+    "parts": [
+      {
+        "text": "Министерство науки и высшего образования РФ",
+        "align": "center",
+        "size_pt": 12
+      },
+      {
+        "text": "федеральное государственное автономное\nобразовательное учреждение высшего образования",
+        "align": "center",
+        "size_pt": 12
+      },
+      {
+        "text": "«{university_full}»",
+        "align": "center",
+        "size_pt": 12
+      },
+      {
+        "type": "table",
+        "style": "Table Grid",
+        "autofit": false,
+        "cell": {
+          "align": "center",
+          "size_pt": 14
+        },
+        "rows": [
+          [
+            "{work_type}"
+          ],
+          [
+            "по дисциплине {discipline}\nТема: {title} с использованием {dbms}"
+          ]
+        ],
+        "widths_cm": [
+          16.5
+        ]
+      },
+      {
+        "text": "Кафедра «{department}»",
+        "align": "left",
+        "size_pt": 14,
+        "space_before_pt": 12
+      },
+      {
+        "text": "Кафедра «Прикладная математика и фундаментальная информатика»",
+        "align": "left",
+        "size_pt": 14
+      },
+      {
+        "text": "",
+        "align": "left",
+        "size_pt": 12,
+        "space_before_pt": 100
+      },
+      {
+        "type": "table",
+        "style": "Table Grid",
+        "autofit": false,
+        "cell": {
+          "align": "left",
+          "size_pt": 12
+        },
+        "rows": [
+          [
+            "Студента",
+            "{student_name}",
+            "",
+            ""
+          ],
+          [
+            "Курс",
+            "{course}",
+            "Группа",
+            "{group}"
+          ],
+          [
+            "Направление",
+            "{program}",
+            "",
+            ""
+          ],
+          [
+            "Руководитель",
+            "{supervisor_title}",
+            "",
+            ""
+          ],
+          [
+            "",
+            "{supervisor_name}",
+            "",
+            ""
+          ],
+          [
+            "Выполнил",
+            "{student_signature}",
+            "",
+            ""
+          ],
+          [
+            "Проверил",
+            "{supervisor_signature}",
+            "",
+            ""
+          ]
+        ],
+        "widths_cm": [
+          2.5,
+          6,
+          2.3,
+          5.7
+        ],
+        "merges": [
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            3
+          ],
+          [
+            4,
+            1,
+            3
+          ],
+          [
+            5,
+            1,
+            3
+          ],
+          [
+            6,
+            1,
+            3
+          ]
+        ]
+      },
+      {
+        "text": "{city} {year}",
+        "align": "center",
+        "size_pt": 12,
+        "space_before_pt": 24
+      }
+    ]
+  },
+  "institution_aliases": {
+    "омгту": {
+      "university_full": "Омский государственный технический университет",
+      "city": "Омск"
+    }
+  },
+  "metadata_defaults": {
+    "university_full": "Омский государственный технический университет",
+    "department": "Прикладная математика и фундаментальная информатика",
+    "work_type": "Учебная работа"
+  }
+}
