@@ -421,15 +421,17 @@ class Converter:
                     in_toc = False
                     toc_page_break_pending = True
                 norms = [s.casefold() for s in self.config.get("structure_headings", [])]
-                if title.casefold() in norms:
+                is_structural_heading = level == 1 and title.casefold() in norms
+                is_toc_heading = level == 1 and title.casefold() == self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold()
+                if is_structural_heading:
                     p = self.doc.add_paragraph()
-                    if title.casefold() != self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold():
+                    if not is_toc_heading:
                         p.style = self.doc.styles["Heading 1"]
                     structural_style = dict(self.config.get("structural_heading", {"align":"center", "first_line_indent_cm":0}))
                     structural_page_break = structural_style.pop("page_break_before", False)
                     self._format_paragraph(p, structural_style)
                     p.paragraph_format.page_break_before = bool(structural_page_break and body_content_seen)
-                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                    if toc_page_break_pending and level == 1 and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
@@ -441,7 +443,7 @@ class Converter:
                     p = self.doc.add_paragraph()
                     p.style = self.doc.styles[f"Heading {min(level, 3)}"]
                     self._format_paragraph(p, hconf)
-                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                    if toc_page_break_pending and level == 1 and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
@@ -450,7 +452,7 @@ class Converter:
                         if hconf.get("bold", level <= 2): r.bold = True
                     in_bibliography = False
                     body_content_seen = True
-                if title.casefold() == self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold():
+                if is_toc_heading:
                     toc = self.config.get("table_of_contents", {})
                     if toc.get("enabled", False):
                         self._add_table_of_contents(toc)
