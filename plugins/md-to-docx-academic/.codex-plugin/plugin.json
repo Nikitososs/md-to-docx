@@ -1,0 +1,18 @@
+{
+  "name": "md-to-docx-academic",
+  "version": "0.1.0",
+  "description": "Convert academic Markdown reports to DOCX with bundled profiles.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Md To Docx Academic",
+    "shortDescription": "Create academic DOCX files from Markdown.",
+    "longDescription": "Local Markdown to DOCX converter with bundled academic style profiles, examples, and Python CLI wrapper.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Convert this academic Markdown report to DOCX using the appropriate bundled style profile."
+  }
+}
