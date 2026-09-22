@@ -239,13 +239,6 @@
         "left_indent_cm": 6.244
       },
       {
-        "text": "",
-        "align": "left",
-        "size_pt": 14,
-        "line_spacing": 1.5,
-        "left_indent_cm": 6.244
-      },
-      {
         "text": "Студента\t\t{student_name}",
         "align": "left",
         "size_pt": 14,

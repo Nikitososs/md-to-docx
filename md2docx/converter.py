@@ -376,6 +376,11 @@ class Converter:
             # The cover header/footer belong only to the first page of section 1.
             # The report section uses its regular (normally blank/page-number) parts.
             body_section.different_first_page_header_footer = False
+            for container in (body_section.header, body_section.first_page_header,
+                              body_section.first_page_footer):
+                container.is_linked_to_previous = False
+                for paragraph in container.paragraphs:
+                    paragraph.clear()
         elif cover.get("page_break_after", True):
             self.doc.add_page_break()
 
