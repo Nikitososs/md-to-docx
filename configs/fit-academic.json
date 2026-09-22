@@ -44,7 +44,8 @@
     "space_after_pt": 6,
     "line_spacing": 1.5,
     "bold": false,
-    "keep_with_next": true
+    "keep_with_next": true,
+    "page_break_before": true
   },
   "table_of_contents": {
     "enabled": true,
