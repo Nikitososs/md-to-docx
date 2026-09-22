@@ -46,7 +46,8 @@ The JSON block must be the first content in the file and must contain valid JSON
 Use these source rules:
 
 - Separate paragraphs and block elements with a blank line.
-- In profiles with `table_of_contents.enabled: true`, add `# СОДЕРЖАНИЕ` where the clickable table should appear. The converter inserts a native Word TOC from subsequent Markdown headings; do not write manual entries beneath that heading. Word may need to update fields on open (`Ctrl+A`, `F9`) to calculate page numbers.
+- In profiles with `table_of_contents.enabled: true`, add `# СОДЕРЖАНИЕ` where the clickable table should appear. The converter inserts a native Word TOC from subsequent Markdown headings; do not write manual entries beneath that heading. If Word asks whether to update fields on open, choose “Yes”. If the TOC is still blank, select the document (`Ctrl+A`) and update fields (`F9`) to calculate entries and page numbers.
+- Structural section headings use level 1 (`#`): the FIT profile renders them uppercase and starts each section on a new page. Level 2 (`##`) preserves the Markdown case, uses bold, and does not start a new page.
 - Use `#`, `##`, and `###` for heading levels. Write section numbers into heading text, for example `## 1 Section` and `### 1.1 Subsection`; the converter does not generate heading numbering.
 - Write a figure as a standalone paragraph: `![Caption text](relative/image.png)`. The alt text becomes the numbered figure caption below the image.
 - Immediately before a pipe table, write `Таблица: Caption text` in a paragraph of its own. The converter creates a real Word table and places a numbered caption above it.

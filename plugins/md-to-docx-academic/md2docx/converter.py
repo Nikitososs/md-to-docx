@@ -373,6 +373,14 @@ class Converter:
             self._cover_header_footer(first_section.first_page_footer, cover.get("footer", []))
             body_section = self.doc.add_section(WD_SECTION.NEW_PAGE)
             self._apply_page_settings(body_section, self.config.get("page", {}))
+            # The cover header/footer belong only to the first page of section 1.
+            # The report section uses its regular (normally blank/page-number) parts.
+            body_section.different_first_page_header_footer = False
+            for container in (body_section.header, body_section.first_page_header,
+                              body_section.first_page_footer):
+                container.is_linked_to_previous = False
+                for paragraph in container.paragraphs:
+                    paragraph.clear()
         elif cover.get("page_break_after", True):
             self.doc.add_page_break()
 
@@ -406,6 +414,7 @@ class Converter:
         in_bibliography = False
         in_toc = False
         toc_page_break_pending = False
+        body_content_seen = False
         list_stack: list[dict[str, Any]] = []
         while i < len(tokens):
             t = tokens[i]
@@ -417,23 +426,29 @@ class Converter:
                     in_toc = False
                     toc_page_break_pending = True
                 norms = [s.casefold() for s in self.config.get("structure_headings", [])]
-                if title.casefold() in norms:
+                is_structural_heading = level == 1 and title.casefold() in norms
+                is_toc_heading = level == 1 and title.casefold() == self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold()
+                if is_structural_heading:
                     p = self.doc.add_paragraph()
-                    if title.casefold() != self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold():
+                    if not is_toc_heading:
                         p.style = self.doc.styles["Heading 1"]
-                    self._format_paragraph(p, self.config.get("structural_heading", {"align":"center", "first_line_indent_cm":0}))
-                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                    structural_style = dict(self.config.get("structural_heading", {"align":"center", "first_line_indent_cm":0}))
+                    structural_page_break = structural_style.pop("page_break_before", False)
+                    self._format_paragraph(p, structural_style)
+                    p.paragraph_format.page_break_before = bool(structural_page_break and body_content_seen)
+                    if toc_page_break_pending and level == 1 and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
                     self._text(title.upper(), p, bold=self.config.get("structural_heading", {}).get("bold", True))
                     in_bibliography = title.casefold() in {x.casefold() for x in self.config.get("bibliography_headings", [self.config.get("bibliography_heading", "Список использованных источников")])}
+                    body_content_seen = True
                 else:
                     hconf = self.config.get("headings", {}).get(str(level), {})
                     p = self.doc.add_paragraph()
                     p.style = self.doc.styles[f"Heading {min(level, 3)}"]
                     self._format_paragraph(p, hconf)
-                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                    if toc_page_break_pending and level == 1 and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
@@ -441,7 +456,8 @@ class Converter:
                     for r in p.runs:
                         if hconf.get("bold", level <= 2): r.bold = True
                     in_bibliography = False
-                if title.casefold() == self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold():
+                    body_content_seen = True
+                if is_toc_heading:
                     toc = self.config.get("table_of_contents", {})
                     if toc.get("enabled", False):
                         self._add_table_of_contents(toc)
@@ -464,9 +480,10 @@ class Converter:
                     for part in get_inline(inline.children):
                         if part.type == "image": self._image(part, source_dir, part.content or None)
                         elif part.type == "text" and part.content.strip(): before.append(part)
+                    body_content_seen = True
                     i += 3; continue
                 if raw.startswith("<pagebreak>"):
-                    self.doc.add_page_break(); i += 3; continue
+                    self.doc.add_page_break(); body_content_seen = True; i += 3; continue
                 p = self.doc.add_paragraph()
                 if in_bibliography:
                     bib = self.config.get("bibliography", {})
@@ -481,6 +498,7 @@ class Converter:
                     self._format_paragraph(p)
                 self._in_bibliography = in_bibliography
                 self._inline(inline.children, p)
+                body_content_seen = True
                 i += 3; continue
             if t.type in ("bullet_list_open", "ordered_list_open"):
                 list_stack.append({"kind": "ordered" if t.type == "ordered_list_open" else "bullet", "counter": int(t.attrGet("start") or 1) - 1}); i += 1; continue
@@ -510,6 +528,7 @@ class Converter:
                         self._in_bibliography = in_bibliography
                         self._text(marker, p)
                         self._inline(tokens[j].children, p)
+                        body_content_seen = True
                         i = j + 1
                         break
                     j += 1
@@ -524,6 +543,7 @@ class Converter:
                                            "space_before_pt":self.config.get("code", {}).get("space_before_pt", 0), "space_after_pt":self.config.get("code", {}).get("space_after_pt", 0)})
                 self._text(t.content.rstrip("\n"), p, code=True, size=self.config.get("code", {}).get("size_pt", 11), font=self.config.get("code", {}).get("font", "DejaVu Sans"))
                 p.paragraph_format.keep_together = True
+                body_content_seen = True
                 i += 1; continue
             if t.type == "table_open":
                 rows = []; i += 1; current = None
@@ -533,9 +553,9 @@ class Converter:
                     i += 1
                 title = pending_caption[1] if pending_caption and pending_caption[0] == "table" else None
                 pending_caption = None
-                self._make_table(rows, title); i += 1; continue
+                self._make_table(rows, title); body_content_seen = True; i += 1; continue
             if t.type == "hr":
-                self.doc.add_page_break(); i += 1; continue
+                self.doc.add_page_break(); body_content_seen = True; i += 1; continue
             i += 1
         return self.doc
 
