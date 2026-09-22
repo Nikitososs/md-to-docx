@@ -47,8 +47,8 @@ Use these source rules:
 
 - Separate paragraphs and block elements with a blank line.
 - In profiles with `table_of_contents.enabled: true`, add `# СОДЕРЖАНИЕ` where the clickable table should appear. The converter inserts a native Word TOC from subsequent Markdown headings; do not write manual entries beneath that heading. If Word asks whether to update fields on open, choose “Yes”. If the TOC is still blank, select the document (`Ctrl+A`) and update fields (`F9`) to calculate entries and page numbers.
-- Structural section headings use level 1 (`#`): the FIT profile renders them uppercase and starts each section on a new page. Level 2 (`##`) preserves the Markdown case, uses bold, and does not start a new page.
-- Use `#`, `##`, and `###` for heading levels. Write section numbers into heading text, for example `## 1 Section` and `### 1.1 Subsection`; the converter does not generate heading numbering.
+- Structural section headings use level 1 (`#`): the FIT profile renders them uppercase and starts each section on a new page. Level 2 (`##`) uses bold, does not start a new page, and the FIT profile numbers headings from `1.` automatically. Existing heading numbers are retained; headings written entirely in uppercase are converted to sentence case.
+- Use `#`, `##`, and `###` for heading levels. In the FIT profile, level 2 headings (`##`) are numbered automatically from `1.`; write `## Section` without a number, or provide a number to retain. Level 3 headings (`###`) still need an explicit number such as `1.1`.
 - Write a figure as a standalone paragraph: `![Caption text](relative/image.png)`. The alt text becomes the numbered figure caption below the image.
 - Immediately before a pipe table, write `Таблица: Caption text` in a paragraph of its own. The converter creates a real Word table and places a numbered caption above it.
 - Immediately before a fenced code block, write `Листинг: Caption text` in a paragraph of its own.
@@ -73,4 +73,4 @@ Open the DOCX and verify title-page fields, headings, tables, captions, images, 
 
 ## Supported source blocks and known limits
 
-The converter handles paragraphs; headings up to level 3; automatic clickable Word tables of contents when enabled by the profile; inline bold/italic/code and links; ordered and unordered lists; Markdown pipe tables; standalone images; fenced code; and the configured bibliography section. It does not process YAML metadata, arbitrary raw HTML, footnotes, automatic section numbering, citations from reference keys, OCR, or automatic GOST metadata generation.
+The converter handles paragraphs; headings up to level 3; automatic clickable Word tables of contents when enabled by the profile; automatic level 2 numbering and uppercase-to-sentence-case conversion when enabled by the profile; inline bold/italic/code and links; ordered and unordered lists; Markdown pipe tables; standalone images; fenced code; and the configured bibliography section. It does not process YAML metadata, arbitrary raw HTML, footnotes, automatic level 3 numbering, citations from reference keys, OCR, or automatic GOST metadata generation.

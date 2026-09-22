@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -38,12 +39,56 @@ def token_text(tokens: list[Token] | None) -> str:
     return "".join(out)
 
 
+def _sentence_case_heading(tokens: list[Token], title: str, enabled: bool) -> None:
+    """Convert all-caps heading text to sentence case without dropping inline markup."""
+    if not enabled:
+        return
+    letters = [char for char in title if char.isalpha()]
+    if not letters or not all(char.isupper() for char in letters):
+        return
+
+    first_letter = True
+
+    def visit(items: list[Token]) -> None:
+        nonlocal first_letter
+        for item in items:
+            if item.type == "text":
+                lowered = item.content.lower()
+                if first_letter:
+                    for index, char in enumerate(lowered):
+                        if char.isalpha():
+                            lowered = lowered[:index] + char.upper() + lowered[index + 1:]
+                            first_letter = False
+                            break
+                item.content = lowered
+            elif item.children:
+                visit(item.children)
+
+    visit(tokens)
+
+
+def _number_heading(title: str, counter: int, options: dict[str, Any]) -> tuple[str, int]:
+    """Apply a configured top-level heading number, respecting an existing number."""
+    if not options.get("enabled", False):
+        return title, counter
+    match = re.match(r"^\s*(\d+)(?:[.)])?\s+(.+)$", title)
+    if match:
+        number = int(match.group(1))
+        title = match.group(2)
+        counter = max(counter, number)
+    else:
+        counter = max(counter, int(options.get("start_number", 1)) - 1) + 1
+        number = counter
+    return options.get("pattern", "{n}. ").format(n=number) + title, counter
+
+
 class Converter:
     def __init__(self, config: dict[str, Any], variables: dict[str, Any] | None = None):
         self.config = config
         self.variables = variables or {}
         self.doc = Document()
         self.counts = {"figure": 0, "table": 0, "listing": 0}
+        self.heading_counters = {2: 0}
         self._in_bibliography = False
         self._configure_page()
         self._configure_styles()
@@ -445,6 +490,18 @@ class Converter:
                     body_content_seen = True
                 else:
                     hconf = self.config.get("headings", {}).get(str(level), {})
+                    display_title = title
+                    explicit_number = None
+                    heading_tokens = deepcopy(inline.children or [])
+                    if level == 2:
+                        numbering = hconf.get("numbering", {})
+                        explicit_number = re.match(r"^\s*(\d+)(?:[.)])?\s+(.+)$", title)
+                        display_title, self.heading_counters[2] = _number_heading(
+                            title, self.heading_counters[2], numbering
+                        )
+                        _sentence_case_heading(
+                            heading_tokens, title, hconf.get("uppercase_to_sentence_case", False)
+                        )
                     p = self.doc.add_paragraph()
                     p.style = self.doc.styles[f"Heading {min(level, 3)}"]
                     self._format_paragraph(p, hconf)
@@ -452,7 +509,19 @@ class Converter:
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
-                    self._inline(inline.children, p)
+                    if level == 2 and hconf.get("numbering", {}).get("enabled", False):
+                        if explicit_number:
+                            for token in heading_tokens:
+                                number_prefix = re.match(r"^\s*\d+(?:[.)])?\s+", token.content) if token.type == "text" else None
+                                if number_prefix:
+                                    token.content = token.content[number_prefix.end():]
+                                    break
+                        visible_suffix = explicit_number.group(2) if explicit_number else title
+                        prefix = display_title[:-len(visible_suffix)] if visible_suffix else display_title
+                        self._text(prefix, p)
+                        self._inline(heading_tokens, p)
+                    else:
+                        self._inline(heading_tokens, p)
                     for r in p.runs:
                         if hconf.get("bold", level <= 2): r.bold = True
                     in_bibliography = False

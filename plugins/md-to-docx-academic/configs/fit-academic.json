@@ -81,7 +81,13 @@
       "line_spacing": 1.5,
       "bold": true,
       "color_hex": "000000",
-      "keep_with_next": true
+      "keep_with_next": true,
+      "uppercase_to_sentence_case": true,
+      "numbering": {
+        "enabled": true,
+        "start_number": 1,
+        "pattern": "{n}. "
+      }
     },
     "3": {
       "align": "left",
