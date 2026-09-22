@@ -8,6 +8,8 @@ from typing import Any
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.section import WD_SECTION
 from docx.shared import Cm, Pt, RGBColor
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -42,6 +44,7 @@ class Converter:
         self.variables = variables or {}
         self.doc = Document()
         self.counts = {"figure": 0, "table": 0, "listing": 0}
+        self._in_bibliography = False
         self._configure_page()
         self._configure_styles()
         self.md = MarkdownIt("commonmark").enable("table")
@@ -49,15 +52,19 @@ class Converter:
     def _configure_page(self) -> None:
         page = self.config.get("page", {})
         for section in self.doc.sections:
-            section.page_width = Cm(float(page.get("width_cm", 21.0)))
-            section.page_height = Cm(float(page.get("height_cm", 29.7)))
-            for prop, key, default in (("top_margin", "top_cm", 2.0), ("bottom_margin", "bottom_cm", 2.0),
-                                       ("left_margin", "left_cm", 3.0), ("right_margin", "right_cm", 1.5)):
-                setattr(section, prop, Cm(float(page.get(key, default))))
-            if "header_distance_cm" in page:
-                section.header_distance = Cm(float(page["header_distance_cm"]))
-            if "footer_distance_cm" in page:
-                section.footer_distance = Cm(float(page["footer_distance_cm"]))
+            self._apply_page_settings(section, page)
+
+    @staticmethod
+    def _apply_page_settings(section, page: dict[str, Any]) -> None:
+        section.page_width = Cm(float(page.get("width_cm", 21.0)))
+        section.page_height = Cm(float(page.get("height_cm", 29.7)))
+        for prop, key, default in (("top_margin", "top_cm", 2.0), ("bottom_margin", "bottom_cm", 2.0),
+                                   ("left_margin", "left_cm", 3.0), ("right_margin", "right_cm", 1.5)):
+            setattr(section, prop, Cm(float(page.get(key, default))))
+        if "header_distance_cm" in page:
+            section.header_distance = Cm(float(page["header_distance_cm"]))
+        if "footer_distance_cm" in page:
+            section.footer_distance = Cm(float(page["footer_distance_cm"]))
 
     def _configure_styles(self) -> None:
         body = self.config.get("body", {})
@@ -69,7 +76,60 @@ class Converter:
         style.paragraph_format.line_spacing = float(body.get("line_spacing", 1.2))
         style.paragraph_format.first_line_indent = Cm(float(body.get("first_line_indent_cm", 1.25)))
         self._set_east_asia(style._element.get_or_add_rPr(), body.get("font", "Times New Roman"))
+        self._configure_heading_styles()
+        self._configure_toc_styles()
         self._configure_page_numbers()
+
+    def _configure_heading_styles(self) -> None:
+        headings = self.config.get("headings", {})
+        body = self.config.get("body", {})
+        for level in range(1, 4):
+            options = headings.get(str(level), {})
+            try:
+                style = self.doc.styles[f"Heading {level}"]
+            except KeyError:
+                continue
+            style.font.name = body.get("font", "Times New Roman")
+            style.font.size = Pt(float(options.get("size_pt", body.get("size_pt", 14))))
+            style.font.bold = bool(options.get("bold", level <= 2))
+            style.font.color.rgb = RGBColor.from_string(options.get("color_hex", "000000"))
+            self._set_east_asia(style._element.get_or_add_rPr(), body.get("font", "Times New Roman"))
+            style.paragraph_format.alignment = ALIGN.get(options.get("align", "left"), WD_ALIGN_PARAGRAPH.LEFT)
+            style.paragraph_format.first_line_indent = Cm(float(options.get("first_line_indent_cm", 0)))
+            style.paragraph_format.left_indent = Cm(float(options.get("left_indent_cm", 0)))
+            style.paragraph_format.space_before = Pt(float(options.get("space_before_pt", 0)))
+            style.paragraph_format.space_after = Pt(float(options.get("space_after_pt", 0)))
+            style.paragraph_format.line_spacing = float(options.get("line_spacing", 1.5))
+            style.paragraph_format.keep_with_next = bool(options.get("keep_with_next", True))
+
+    def _configure_toc_styles(self) -> None:
+        toc = self.config.get("table_of_contents", {})
+        if not toc.get("enabled", False):
+            return
+        font = toc.get("font", self.config.get("body", {}).get("font", "Times New Roman"))
+        size = float(toc.get("size_pt", self.config.get("body", {}).get("size_pt", 14)))
+        indent_step = float(toc.get("indent_step_cm", 0.5))
+        for level in range(1, int(toc.get("levels", 3)) + 1):
+            try:
+                style = self.doc.styles[f"TOC {level}"]
+            except KeyError:
+                style = self.doc.styles.add_style(f"TOC {level}", WD_STYLE_TYPE.PARAGRAPH)
+            style.font.name = font
+            style.font.size = Pt(size)
+            style.font.color.rgb = RGBColor.from_string(toc.get("color_hex", "000000"))
+            self._set_east_asia(style._element.get_or_add_rPr(), font)
+            style.paragraph_format.left_indent = Cm(indent_step * (level - 1))
+            style.paragraph_format.first_line_indent = Cm(0)
+            style.paragraph_format.space_before = Pt(float(toc.get("space_before_pt", 0)))
+            style.paragraph_format.space_after = Pt(float(toc.get("space_after_pt", 0)))
+            style.paragraph_format.line_spacing = float(toc.get("line_spacing", 1.5))
+        for name in ("Hyperlink", "FollowedHyperlink"):
+            try:
+                style = self.doc.styles[name]
+            except KeyError:
+                continue
+            style.font.color.rgb = RGBColor.from_string(toc.get("color_hex", "000000"))
+            style.font.underline = False
 
     def _configure_page_numbers(self) -> None:
         numbers = self.config.get("page_numbers", {})
@@ -123,17 +183,19 @@ class Converter:
         if style.get("page_break_before"):
             fmt.page_break_before = True
 
-    def _text(self, text: str, p, *, bold=False, italic=False, code=False, size=None, font=None, link_url=None) -> None:
+    def _text(self, text: str, p, *, bold=False, italic=False, code=False, size=None, font=None,
+              link_url=None, preserve_nbsp=False) -> None:
         if not code:
             formatting = self.config.get("formatting", {})
-            if formatting.get("convert_em_dash_to_en_dash", True):
+            if formatting.get("convert_em_dash_to_en_dash", True) and not self._in_bibliography:
                 text = text.replace("—", "–")
-            if formatting.get("normalize_quotes_to_russian", True):
+            if formatting.get("normalize_quotes_to_russian", True) and not self._in_bibliography:
                 text = re.sub(r'"([^"\n]*)"', r"«\1»", text)
                 text = text.replace("“", "«").replace("”", "»")
-            text = text.replace("\u00a0", " ")
+            if not preserve_nbsp:
+                text = text.replace("\u00a0", " ")
         # The department sample requests italics for Latin text; keep code exempt.
-        use_latin_italic = bool(self.config.get("formatting", {}).get("italicize_latin", True)) and not code
+        use_latin_italic = bool(self.config.get("formatting", {}).get("italicize_latin", True)) and not code and not self._in_bibliography
         parts = re.split(r"([A-Za-z]+(?:[A-Za-z0-9_./:+#-]*[A-Za-z0-9_+#])?)", text) if use_latin_italic else [text]
         for part in filter(None, parts):
             r = p.add_run(part)
@@ -255,12 +317,21 @@ class Converter:
                 for col, width in enumerate(widths[:ncols]):
                     table.columns[col].width = Cm(float(width))
                 try:
-                    table.style = part.get("style", "Table Grid")
+                    table.style = part.get("style", "Normal Table")
                 except KeyError:
                     pass
-                for rowdata in rows:
-                    cells = table.add_row().cells
-                    for index, cell in enumerate(cells):
+                for _ in rows:
+                    table.add_row()
+                for row_index, start_col, end_col in part.get("merges", []):
+                    table.cell(int(row_index), int(start_col)).merge(table.cell(int(row_index), int(end_col)))
+                for row_index, rowdata in enumerate(rows):
+                    populated_cells = set()
+                    for index in range(ncols):
+                        cell = table.cell(row_index, index)
+                        cell_key = id(cell._tc)
+                        if cell_key in populated_cells:
+                            continue
+                        populated_cells.add(cell_key)
                         cell.text = ""
                         p = cell.paragraphs[0]
                         cell_cfg = part.get("cell", {})
@@ -269,16 +340,59 @@ class Converter:
                         if index < len(rowdata):
                             self._text(str(rowdata[index]).format_map(_SafeFormat(self.variables)), p,
                                        bold=cell_cfg.get("bold", False), size=cell_cfg.get("size_pt", 12))
-                for row_index, start_col, end_col in part.get("merges", []):
-                    table.cell(int(row_index), int(start_col)).merge(table.cell(int(row_index), int(end_col)))
                 continue
             value = part.get("text", "").format_map(_SafeFormat(self.variables))
             p = self.doc.add_paragraph()
-            self._format_paragraph(p, {"align": part.get("align", "center"), "first_line_indent_cm": 0,
-                                       "line_spacing": part.get("line_spacing", 1.0), "space_before_pt": part.get("space_before_pt", 0),
+            self._format_paragraph(p, {"align": part.get("align", "center"),
+                                       "first_line_indent_cm": part.get("first_line_indent_cm", 0),
+                                       "left_indent_cm": part.get("left_indent_cm", 0),
+                                       "line_spacing": part.get("line_spacing", 1.0),
+                                       "space_before_pt": part.get("space_before_pt", 0),
                                        "space_after_pt": part.get("space_after_pt", 0)})
+            if "runs" in part:
+                for item in part["runs"]:
+                    if "field" in item:
+                        field = item["field"]
+                        run_text = str(self.variables.get(field, "{" + field + "}"))
+                    else:
+                        run_text = str(item.get("text", "")).format_map(_SafeFormat(self.variables))
+                    start_run = len(p.runs)
+                    self._text(run_text, p, bold=item.get("bold", part.get("bold", False)),
+                               size=item.get("size_pt", part.get("size_pt", 12)),
+                               preserve_nbsp=item.get("preserve_nbsp", False))
+                    for run in p.runs[start_run:]:
+                        run.underline = item.get("underline", False)
+            else:
+                self._text(value, p, bold=part.get("bold", False), size=part.get("size_pt", 12))
+        if cover.get("start_body_section", False):
+            if cover.get("page"):
+                self._apply_page_settings(self.doc.sections[0], cover["page"])
+            first_section = self.doc.sections[0]
+            first_section.different_first_page_header_footer = True
+            self._cover_header_footer(first_section.first_page_header, cover.get("header", []))
+            self._cover_header_footer(first_section.first_page_footer, cover.get("footer", []))
+            body_section = self.doc.add_section(WD_SECTION.NEW_PAGE)
+            self._apply_page_settings(body_section, self.config.get("page", {}))
+        elif cover.get("page_break_after", True):
+            self.doc.add_page_break()
+
+    def _cover_header_footer(self, container, parts: list[dict[str, Any]]) -> None:
+        if not parts:
+            return
+        container.is_linked_to_previous = False
+        paragraphs = container.paragraphs
+        first = paragraphs[0]
+        first.clear()
+        for index, part in enumerate(parts):
+            p = first if index == 0 else container.add_paragraph()
+            self._format_paragraph(p, {"align": part.get("align", "center"),
+                                       "first_line_indent_cm": 0,
+                                       "left_indent_cm": part.get("left_indent_cm", 0),
+                                       "line_spacing": part.get("line_spacing", 1.0),
+                                       "space_before_pt": part.get("space_before_pt", 0),
+                                       "space_after_pt": part.get("space_after_pt", 0)})
+            value = part.get("text", "").format_map(_SafeFormat(self.variables))
             self._text(value, p, bold=part.get("bold", False), size=part.get("size_pt", 12))
-        if cover.get("page_break_after", True): self.doc.add_page_break()
 
     def convert(self, markdown: str, source_dir: Path) -> Document:
         data, markdown = _frontmatter(markdown)
@@ -290,6 +404,8 @@ class Converter:
         i = 0
         pending_caption: tuple[str, str] | None = None
         in_bibliography = False
+        in_toc = False
+        toc_page_break_pending = False
         list_stack: list[dict[str, Any]] = []
         while i < len(tokens):
             t = tokens[i]
@@ -297,21 +413,44 @@ class Converter:
                 inline = tokens[i + 1]
                 title = token_text(inline.children).strip()
                 level = int(t.tag[1:])
+                if in_toc:
+                    in_toc = False
+                    toc_page_break_pending = True
                 norms = [s.casefold() for s in self.config.get("structure_headings", [])]
                 if title.casefold() in norms:
                     p = self.doc.add_paragraph()
+                    if title.casefold() != self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold():
+                        p.style = self.doc.styles["Heading 1"]
                     self._format_paragraph(p, self.config.get("structural_heading", {"align":"center", "first_line_indent_cm":0}))
-                    self._text(title.upper(), p)
+                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                        p.paragraph_format.page_break_before = True
+                    if toc_page_break_pending:
+                        toc_page_break_pending = False
+                    self._text(title.upper(), p, bold=self.config.get("structural_heading", {}).get("bold", True))
                     in_bibliography = title.casefold() in {x.casefold() for x in self.config.get("bibliography_headings", [self.config.get("bibliography_heading", "Список использованных источников")])}
                 else:
                     hconf = self.config.get("headings", {}).get(str(level), {})
                     p = self.doc.add_paragraph()
+                    p.style = self.doc.styles[f"Heading {min(level, 3)}"]
                     self._format_paragraph(p, hconf)
+                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                        p.paragraph_format.page_break_before = True
+                    if toc_page_break_pending:
+                        toc_page_break_pending = False
                     self._inline(inline.children, p)
                     for r in p.runs:
                         if hconf.get("bold", level <= 2): r.bold = True
                     in_bibliography = False
+                if title.casefold() == self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold():
+                    toc = self.config.get("table_of_contents", {})
+                    if toc.get("enabled", False):
+                        self._add_table_of_contents(toc)
+                        in_toc = True
+                self._in_bibliography = in_bibliography
                 i += 3; continue
+            if in_toc:
+                i += 1
+                continue
             if t.type == "paragraph_open":
                 inline = tokens[i + 1]
                 imgs = [x for x in get_inline(inline.children) if x.type == "image"]
@@ -329,10 +468,18 @@ class Converter:
                 if raw.startswith("<pagebreak>"):
                     self.doc.add_page_break(); i += 3; continue
                 p = self.doc.add_paragraph()
-                self._format_paragraph(p, {"first_line_indent_cm": 0} if in_bibliography else None)
                 if in_bibliography:
-                    p.paragraph_format.left_indent = Cm(float(self.config.get("bibliography", {}).get("left_indent_cm", 0)))
-                    p.paragraph_format.first_line_indent = Cm(float(self.config.get("bibliography", {}).get("hanging_indent_cm", 0)))
+                    bib = self.config.get("bibliography", {})
+                    body = self.config.get("body", {})
+                    self._format_paragraph(p, {
+                        "left_indent_cm": float(bib.get("left_indent_cm", 0)),
+                        "first_line_indent_cm": float(bib.get(
+                            "first_line_indent_cm", body.get("first_line_indent_cm", 0)
+                        )),
+                    })
+                else:
+                    self._format_paragraph(p)
+                self._in_bibliography = in_bibliography
                 self._inline(inline.children, p)
                 i += 3; continue
             if t.type in ("bullet_list_open", "ordered_list_open"):
@@ -349,12 +496,18 @@ class Converter:
                         p = self.doc.add_paragraph()
                         if in_bibliography:
                             bib = self.config.get("bibliography", {})
-                            self._format_paragraph(p, {"first_line_indent_cm": float(bib.get("hanging_indent_cm", -0.75)),
-                                                       "left_indent_cm": float(bib.get("left_indent_cm", 0))})
-                            marker = f"{frame['counter']}. "
+                            body = self.config.get("body", {})
+                            self._format_paragraph(p, {
+                                "first_line_indent_cm": float(bib.get(
+                                    "first_line_indent_cm", body.get("first_line_indent_cm", 0)
+                                )),
+                                "left_indent_cm": float(bib.get("left_indent_cm", 0)),
+                            })
+                            marker = f"{frame['counter']}. " if bib.get("numbered", True) else ""
                         else:
                             self._format_paragraph(p, {"first_line_indent_cm": 0, "left_indent_cm": 0.75 * max(1, len(list_stack))})
                             marker = f"{frame['counter']}. " if frame["kind"] == "ordered" else "• "
+                        self._in_bibliography = in_bibliography
                         self._text(marker, p)
                         self._inline(tokens[j].children, p)
                         i = j + 1
@@ -385,3 +538,42 @@ class Converter:
                 self.doc.add_page_break(); i += 1; continue
             i += 1
         return self.doc
+
+    def _add_table_of_contents(self, toc: dict[str, Any]) -> None:
+        """Insert a native Word TOC field; Word fills its entries and page numbers."""
+        paragraph = self.doc.add_paragraph()
+        self._format_paragraph(paragraph, {
+            "align": "left",
+            "first_line_indent_cm": 0,
+            "line_spacing": toc.get("line_spacing", 1.5),
+            "space_before_pt": toc.get("space_before_pt", 0),
+            "space_after_pt": toc.get("space_after_pt", 0),
+        })
+        run = paragraph.add_run()
+        run.font.name = toc.get("font", self.config.get("body", {}).get("font", "Times New Roman"))
+        run.font.size = Pt(float(toc.get("size_pt", self.config.get("body", {}).get("size_pt", 14))))
+        self._set_east_asia(run._element.get_or_add_rPr(), toc.get("font", "Times New Roman"))
+        begin = OxmlElement("w:fldChar")
+        begin.set(qn("w:fldCharType"), "begin")
+        instr = OxmlElement("w:instrText")
+        instr.set(qn("xml:space"), "preserve")
+        switches = ["TOC", f'\\o "1-{int(toc.get("levels", 3))}"']
+        if toc.get("hyperlinks", True):
+            switches.append("\\h")
+        if toc.get("hide_page_numbers_in_web_layout", True):
+            switches.append("\\z")
+        if toc.get("use_outline_levels", True):
+            switches.append("\\u")
+        instr.text = " " + " ".join(switches) + " "
+        separate = OxmlElement("w:fldChar")
+        separate.set(qn("w:fldCharType"), "separate")
+        end = OxmlElement("w:fldChar")
+        end.set(qn("w:fldCharType"), "end")
+        for element in (begin, instr, separate, end):
+            run._r.append(element)
+        settings = self.doc.settings._element
+        update = settings.find(qn("w:updateFields"))
+        if update is None:
+            update = OxmlElement("w:updateFields")
+            settings.append(update)
+        update.set(qn("w:val"), "true")

@@ -33,24 +33,25 @@ At the very top of the Markdown source, use a fixed JSON metadata block so the c
 {
   "discipline": "Системы управления базами данных (СУБД PostgreSQL 15)",
   "title": "Полнотекстовый поиск и ранжирование релевантности",
-  "student": {"name": "Иванов Иван Иванович", "course": "3", "group": "Группа-001"},
+  "student": {"name": "Иванов Иван Иванович", "course": "3", "group": "Группа-001", "program": "00.00.00 Название направления"},
   "teacher": {"title": "доц., к.н.", "name": "Петрова Анна Сергеевна"},
   "institution": {"short": "ОмГТУ", "department": "ПМиФИ", "year": "2026"},
-  "work": {"type": "Лабораторная работа", "number": "1"}
+  "work": {"type": "Домашнее задание", "variant": "1"}
 }
 }}
 ```
 
-The JSON block must be the first content in the file and must contain valid JSON between the `{{json` and `}}` lines. The parser reads explicit fields; it does not infer course, group, names, or titles from prose. The configured ОмГТУ alias supplies the full university name and city. Other institutions need an alias in the JSON profile or explicit values in `--vars`. YAML and free-text metadata are not supported. Values in the optional `--vars` file override Markdown metadata. For sample title-page data, see `examples/report-vars.json` and `examples/gost-report-vars.json`. Never fill unknown placeholders with guesses.
+The JSON block must be the first content in the file and must contain valid JSON between the `{{json` and `}}` lines. The parser reads explicit fields; it does not infer course, group, names, or titles from prose. The FIT title page follows the IDZ template, including its first-page header with institution and department, its work/student/reviewer fields, underlined signature slots, and city/year footer. YAML and free-text metadata are not supported. Values in the optional `--vars` file override Markdown metadata. Never fill unknown placeholders with guesses.
 
 Use these source rules:
 
 - Separate paragraphs and block elements with a blank line.
+- In profiles with `table_of_contents.enabled: true`, add `# СОДЕРЖАНИЕ` where the clickable table should appear. The converter inserts a native Word TOC from subsequent Markdown headings; do not write manual entries beneath that heading. Word may need to update fields on open (`Ctrl+A`, `F9`) to calculate page numbers.
 - Use `#`, `##`, and `###` for heading levels. Write section numbers into heading text, for example `## 1 Section` and `### 1.1 Subsection`; the converter does not generate heading numbering.
 - Write a figure as a standalone paragraph: `![Caption text](relative/image.png)`. The alt text becomes the numbered figure caption below the image.
 - Immediately before a pipe table, write `Таблица: Caption text` in a paragraph of its own. The converter creates a real Word table and places a numbered caption above it.
 - Immediately before a fenced code block, write `Листинг: Caption text` in a paragraph of its own.
-- Put the bibliography beneath a configured structural heading as a numbered Markdown list, one complete source description per list item. Keep the source text in the required citation standard yourself; the converter does not infer missing metadata or rewrite it.
+- Put the bibliography beneath a configured structural heading as a Markdown list, one complete source description per item. The FIT GOST profile prints entries without list markers and applies the profile's paragraph indent. Keep the source text in the required citation standard yourself; the converter does not infer missing metadata or rewrite it.
 - Use regular Markdown for emphasis, inline code, links, and ordered/unordered lists. Image paths are relative to the source `.md` file.
 
 Use `examples/report-template.md` as the short starter or `examples/full-report-template.md` as the complete syntax reference. Remove all instructional placeholders before delivery. A standalone `---` is treated as a page break by this converter.
@@ -71,4 +72,4 @@ Open the DOCX and verify title-page fields, headings, tables, captions, images, 
 
 ## Supported source blocks and known limits
 
-The converter handles paragraphs; headings up to level 3; inline bold/italic/code and links; ordered and unordered lists; Markdown pipe tables; standalone images; fenced code; and the configured bibliography section. It does not process YAML metadata, arbitrary raw HTML, footnotes, automatic section numbering, citations from reference keys, OCR, or automatic GOST metadata generation.
+The converter handles paragraphs; headings up to level 3; automatic clickable Word tables of contents when enabled by the profile; inline bold/italic/code and links; ordered and unordered lists; Markdown pipe tables; standalone images; fenced code; and the configured bibliography section. It does not process YAML metadata, arbitrary raw HTML, footnotes, automatic section numbering, citations from reference keys, OCR, or automatic GOST metadata generation.

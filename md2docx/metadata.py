@@ -35,10 +35,13 @@ def _normalize_metadata(metadata: dict[str, Any], source: dict[str, Any]) -> dic
         if "name" in student: data["student_name"] = student["name"]
         if "course" in student: data["course"] = student["course"]
         if "group" in student: data["group"] = student["group"]
+        if "program" in student: data["program"] = student["program"]
+        if "signature" in student: data["student_signature"] = student["signature"]
     teacher = metadata.get("teacher", metadata.get("instructor", metadata.get("supervisor", {})))
     if isinstance(teacher, dict):
         if "title" in teacher: data["supervisor_title"] = teacher["title"]
         if "name" in teacher: data["supervisor_name"] = teacher["name"]
+        if "signature" in teacher: data["supervisor_signature"] = teacher["signature"]
     institution = metadata.get("institution", {})
     if isinstance(institution, dict):
         short = institution.get("short")
@@ -51,11 +54,16 @@ def _normalize_metadata(metadata: dict[str, Any], source: dict[str, Any]) -> dic
                               ("department", "department"), ("year", "year"),
                               ("organization", "organization"), ("organization_unit", "organization_unit")):
             if field in institution:
-                data[target] = institution[field]
+                value = institution[field]
+                if field == "department":
+                    aliases = source.get("department_aliases", {})
+                    value = aliases.get(str(value).casefold(), value)
+                data[target] = value
     work = metadata.get("work", {})
     if isinstance(work, dict):
         kind = str(work.get("type", "")).strip()
         number = str(work.get("number", "")).strip()
+        if "variant" in work: data["variant"] = work["variant"]
         if kind:
             data["work_type"] = kind if not number else f"{kind} № {number}"
     return data
