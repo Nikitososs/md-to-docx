@@ -319,6 +319,9 @@
         "size_pt": 14,
         "line_spacing": 1.0,
         "left_indent_cm": 5.503,
+        "tab_stops_cm": [
+          9.0
+        ],
         "runs": [
           {
             "text": "Проверил\t"
@@ -339,7 +342,7 @@
         "align": "left",
         "size_pt": 9,
         "line_spacing": 1.5,
-        "left_indent_cm": 10.499
+        "left_indent_cm": 11.3
       },
       {
         "text": "{supervisor_name}",
@@ -388,10 +391,10 @@
         "align": "left",
         "size_pt": 14,
         "line_spacing": 1.0,
-        "left_indent_cm": 5.503,
+        "left_indent_cm": 9.0,
         "runs": [
           {
-            "text": "                                                  ",
+            "text": "                                                       ",
             "underline": true,
             "preserve_nbsp": true
           }
@@ -402,7 +405,7 @@
         "align": "left",
         "size_pt": 9,
         "line_spacing": 1.0,
-        "left_indent_cm": 11.499
+        "left_indent_cm": 10.6
       }
     ],
     "header": [

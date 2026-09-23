@@ -220,6 +220,8 @@ class Converter:
         fmt.first_line_indent = Cm(float(style.get("first_line_indent_cm", self.config.get("body", {}).get("first_line_indent_cm", 1.25))))
         if "left_indent_cm" in style:
             fmt.left_indent = Cm(float(style["left_indent_cm"]))
+        for stop_cm in style.get("tab_stops_cm", []):
+            fmt.tab_stops.add_tab_stop(Cm(float(stop_cm)))
         p.alignment = ALIGN.get(style.get("align", "justify"), WD_ALIGN_PARAGRAPH.JUSTIFY)
         if "keep_with_next" in style:
             fmt.keep_with_next = bool(style["keep_with_next"])
