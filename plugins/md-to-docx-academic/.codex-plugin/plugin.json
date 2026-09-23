@@ -1,7 +1,7 @@
 {
   "name": "md-to-docx-academic",
-  "version": "0.1.3+codex.20260923121614",
-  "description": "Skill for using the canonical academic Markdown-to-DOCX converter in the md-to-docx repository.",
+  "version": "0.1.3+codex.20260923125425",
+  "description": "Convert structured academic Markdown documents to DOCX with configurable JSON style profiles.",
   "author": {
     "name": "Local developer"
   },
@@ -9,10 +9,10 @@
   "interface": {
     "displayName": "Md To Docx Academic",
     "shortDescription": "Create academic DOCX files from Markdown.",
-    "longDescription": "Thin Codex skill that uses the shared Python library, JSON profiles, and examples in C:\\projects\\md-to-docx.",
+    "longDescription": "Create academic DOCX documents from structured Markdown using configurable JSON style profiles.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Use the md-to-docx-academic skill and canonical library in C:\\projects\\md-to-docx to convert this academic Markdown report."
+    "defaultPrompt": "Use the md-to-docx-academic skill to convert this academic Markdown report with the appropriate JSON style profile."
   }
 }

@@ -1,11 +1,11 @@
 ---
 name: md-to-docx-academic
-description: Convert academic Markdown reports into DOCX using this local plugin's bundled converter and JSON style profiles.
+description: Convert structured academic Markdown reports into DOCX with the project's converter and JSON style profiles.
 ---
 
 # Convert an academic Markdown report to DOCX
 
-Use the canonical converter and profiles from the repository at `<REPO_ROOT>`. This plugin contains only this skill and its required manifest; it must not carry a second copy of the Python library, profiles, or examples. Python 3.10+ and the declared dependencies (`markdown-it-py`, `python-docx`, `Pillow`) must be available. Follow these Markdown source conventions. Keep the author's meaning, numbers, formulas, and reference details unchanged. Do not invent missing student, reviewer, course, or publication data.
+Use the canonical converter and profiles from the active `md-to-docx` project. Locate the repository root from the current workspace: it contains `pyproject.toml`, the `md2docx/` package, and `configs/`. If that repository is not open in the workspace, ask the user to open it; do not assume a drive, user profile, or fixed installation directory. This plugin contains only this skill and its required manifest; it must not carry a second copy of the Python library, profiles, or examples. Python 3.10+ and the declared dependencies (`markdown-it-py`, `python-docx`, `Pillow`) must be available. Follow these Markdown source conventions. Keep the author's meaning, numbers, formulas, and reference details unchanged. Do not invent missing student, reviewer, course, or publication data.
 
 ## 1. Inspect the inputs
 
@@ -17,9 +17,9 @@ Use the canonical converter and profiles from the repository at `<REPO_ROOT>`. T
 
 ## 2. Choose one profile
 
-- `<REPO_ROOT>\configs\fit-academic.json`: supplied ФИТ requirements and title-page structure.
-- `<REPO_ROOT>\configs\fit-gost-bibliography-7.0.100-2018.json`: ФИТ body/title layout and a separate bibliography section profile for ГОСТ Р 7.0.100-2018.
-- `<REPO_ROOT>\configs\gost-report-7.32-2017.json`: research-report layout based on ГОСТ 7.32-2017. Use only when that standard applies to the assignment.
+- `configs/fit-academic.json`: supplied ФИТ requirements and title-page structure.
+- `configs/fit-gost-bibliography-7.0.100-2018.json`: ФИТ body/title layout and a separate bibliography section profile for ГОСТ Р 7.0.100-2018.
+- `configs/gost-report-7.32-2017.json`: research-report layout based on ГОСТ 7.32-2017. Use only when that standard applies to the assignment.
 - A user-provided profile: use when the user supplies a department, university, or course configuration.
 
 When the appropriate standard or local requirement is unclear, use the supplied department profile and state the unresolved choice. The bibliography profile does not automatically rewrite raw references into complete GOST descriptions.
@@ -56,16 +56,20 @@ Use these source rules:
 - Put the bibliography beneath a configured structural heading as a Markdown list, one complete source description per item. The FIT GOST profile prints entries without list markers and applies the profile's paragraph indent. Keep the source text in the required citation standard yourself; the converter does not infer missing metadata or rewrite it.
 - Use regular Markdown for emphasis, inline code, links, and ordered/unordered lists. Image paths are relative to the source `.md` file.
 
-Use `<REPO_ROOT>\examples\report-template.md` as the short starter or `<REPO_ROOT>\examples\full-report-template.md` as the complete syntax reference. Remove all instructional placeholders before delivery. A standalone `---` is treated as a page break by this converter.
+Use `examples/report-template.md` as the short starter or `examples/full-report-template.md` as the complete syntax reference. Resolve these paths from the repository root. Remove all instructional placeholders before delivery. A standalone `---` is treated as a page break by this converter.
 
 ## 4. Convert
 
-Run the canonical library from the repository root. Select the JSON profile with `--config`.
+Run the canonical library from the repository root. If the current directory is elsewhere inside the repository, locate the root with `git rev-parse --show-toplevel`. Select the JSON profile with `--config`.
 
 ```powershell
-Push-Location '<REPO_ROOT>'
+$repoRoot = (git rev-parse --show-toplevel).Trim()
+$inputPath = (Resolve-Path '.\report.md').Path
+$varsPath = (Resolve-Path '.\report-vars.json').Path
+$outputPath = Join-Path $repoRoot 'out\report.docx'
+Push-Location $repoRoot
 try {
-    python -m md2docx 'C:\path\to\report.md' --config .\configs\fit-academic.json --vars 'C:\path\to\report-vars.json' -o 'C:\path\to\report.docx'
+    python -m md2docx $inputPath --config .\configs\fit-academic.json --vars $varsPath -o $outputPath
 } finally {
     Pop-Location
 }
