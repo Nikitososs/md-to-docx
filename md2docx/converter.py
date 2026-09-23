@@ -460,6 +460,8 @@ class Converter:
         in_toc = False
         toc_page_break_pending = False
         body_content_seen = False
+        introduction_seen = False
+        main_section_seen = False
         list_stack: list[dict[str, Any]] = []
         while i < len(tokens):
             t = tokens[i]
@@ -467,12 +469,32 @@ class Converter:
                 inline = tokens[i + 1]
                 title = token_text(inline.children).strip()
                 level = int(t.tag[1:])
+                normalized_title = title.casefold().strip()
                 if in_toc:
                     in_toc = False
                     toc_page_break_pending = True
-                norms = [s.casefold() for s in self.config.get("structure_headings", [])]
-                is_structural_heading = level == 1 and title.casefold() in norms
-                is_toc_heading = level == 1 and title.casefold() == self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ").casefold()
+                norms = {s.casefold().strip() for s in self.config.get("structure_headings", [])}
+                is_structural_heading = normalized_title in norms
+                toc_heading = self.config.get("table_of_contents", {}).get("heading", "СОДЕРЖАНИЕ")
+                is_toc_heading = normalized_title == toc_heading.casefold().strip()
+                auto_main = self.config.get("auto_main_section", {})
+                auto_main_title = auto_main.get("heading", "ОСНОВНАЯ ЧАСТЬ")
+                if (
+                    not is_structural_heading
+                    and auto_main.get("enabled", False)
+                    and introduction_seen
+                    and not main_section_seen
+                    and level in auto_main.get("before_heading_levels", [2, 3])
+                ):
+                    p = self.doc.add_paragraph()
+                    p.style = self.doc.styles["Heading 1"]
+                    structural_style = dict(self.config.get("structural_heading", {"align": "center", "first_line_indent_cm": 0}))
+                    structural_page_break = structural_style.pop("page_break_before", False)
+                    self._format_paragraph(p, structural_style)
+                    p.paragraph_format.page_break_before = bool(structural_page_break and body_content_seen)
+                    self._text(auto_main_title.upper(), p, bold=self.config.get("structural_heading", {}).get("bold", False))
+                    body_content_seen = True
+                    main_section_seen = True
                 if is_structural_heading:
                     p = self.doc.add_paragraph()
                     if not is_toc_heading:
@@ -481,12 +503,17 @@ class Converter:
                     structural_page_break = structural_style.pop("page_break_before", False)
                     self._format_paragraph(p, structural_style)
                     p.paragraph_format.page_break_before = bool(structural_page_break and body_content_seen)
-                    if toc_page_break_pending and level == 1 and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
                     self._text(title.upper(), p, bold=self.config.get("structural_heading", {}).get("bold", True))
-                    in_bibliography = title.casefold() in {x.casefold() for x in self.config.get("bibliography_headings", [self.config.get("bibliography_heading", "Список использованных источников")])}
+                    in_bibliography = normalized_title in {
+                        x.casefold().strip()
+                        for x in self.config.get("bibliography_headings", [self.config.get("bibliography_heading", "Список использованных источников")])
+                    }
+                    introduction_seen = normalized_title == auto_main.get("after_heading", "ВВЕДЕНИЕ").casefold().strip() or introduction_seen
+                    main_section_seen = normalized_title == auto_main_title.casefold().strip() or main_section_seen
                     body_content_seen = True
                 else:
                     hconf = self.config.get("headings", {}).get(str(level), {})
@@ -505,7 +532,7 @@ class Converter:
                     p = self.doc.add_paragraph()
                     p.style = self.doc.styles[f"Heading {min(level, 3)}"]
                     self._format_paragraph(p, hconf)
-                    if toc_page_break_pending and level == 1 and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
+                    if toc_page_break_pending and self.config.get("table_of_contents", {}).get("page_break_before_next_heading", True):
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
