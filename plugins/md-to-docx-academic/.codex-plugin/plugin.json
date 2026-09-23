@@ -1,6 +1,6 @@
 {
   "name": "md-to-docx-academic",
-  "version": "0.1.3+codex.20260923134659",
+  "version": "0.1.3+codex.20260923134957",
   "description": "Convert structured academic Markdown documents to DOCX with configurable JSON style profiles.",
   "author": {
     "name": "Local developer"
