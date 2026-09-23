@@ -304,6 +304,12 @@ class Converter:
                                    "keep_with_next": labels.get("keep_with_next", kind == "listing" or kind == "table")})
         self._text(pattern.format(n=number, title=title), p, bold=bool(labels.get("bold", False)), size=labels.get("size_pt"))
 
+    def _separate_block_from_previous(self) -> None:
+        paragraphs = self.doc.paragraphs
+        if paragraphs and paragraphs[-1].style.name in {"Heading 2", "Heading 3"}:
+            return
+        self.doc.add_paragraph()
+
     def _image(self, token: Token, source_dir: Path, title: str | None = None) -> None:
         src = token.attrGet("src") or ""
         path = Path(src)
@@ -311,7 +317,7 @@ class Converter:
             path = source_dir / path
         if not path.is_file():
             raise ValueError(f"Image not found: {path}")
-        self.doc.add_paragraph()  # required separation before figure
+        self._separate_block_from_previous()
         p = self.doc.add_paragraph()
         self._format_paragraph(p, self.config.get("figure", {}))
         width = self.config.get("figure", {}).get("max_width_cm", 15)
@@ -322,7 +328,7 @@ class Converter:
 
     def _make_table(self, rows: list[list[list[Token]]], title: str | None) -> None:
         if title:
-            self.doc.add_paragraph()
+            self._separate_block_from_previous()
             self._caption("table", title, self.config.get("table", {}).get("caption_align", "left"))
         if not rows:
             return
