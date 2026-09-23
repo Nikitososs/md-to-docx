@@ -5,7 +5,7 @@ description: Convert academic Markdown reports into DOCX using this local plugin
 
 # Convert an academic Markdown report to DOCX
 
-Use the converter bundled with this plugin at `<USER_HOME>\plugins\md-to-docx-academic\scripts\convert.py`. Python 3.10+ and the declared dependencies (`markdown-it-py`, `python-docx`, `Pillow`) must be available. Follow these Markdown source conventions. Keep the author's meaning, numbers, formulas, and reference details unchanged. Do not invent missing student, reviewer, course, or publication data.
+Use the canonical converter and profiles from the repository at `<REPO_ROOT>`. This plugin contains only this skill and its required manifest; it must not carry a second copy of the Python library, profiles, or examples. Python 3.10+ and the declared dependencies (`markdown-it-py`, `python-docx`, `Pillow`) must be available. Follow these Markdown source conventions. Keep the author's meaning, numbers, formulas, and reference details unchanged. Do not invent missing student, reviewer, course, or publication data.
 
 ## 1. Inspect the inputs
 
@@ -17,9 +17,9 @@ Use the converter bundled with this plugin at `<USER_HOME>\plugins\md-to-docx-ac
 
 ## 2. Choose one profile
 
-- `configs/fit-academic.json`: supplied ФИТ requirements and title-page structure.
-- `configs/fit-gost-bibliography-7.0.100-2018.json`: ФИТ body/title layout and a separate bibliography section profile for ГОСТ Р 7.0.100-2018.
-- `configs/gost-report-7.32-2017.json`: research-report layout based on ГОСТ 7.32-2017. Use only when that standard applies to the assignment.
+- `<REPO_ROOT>\configs\fit-academic.json`: supplied ФИТ requirements and title-page structure.
+- `<REPO_ROOT>\configs\fit-gost-bibliography-7.0.100-2018.json`: ФИТ body/title layout and a separate bibliography section profile for ГОСТ Р 7.0.100-2018.
+- `<REPO_ROOT>\configs\gost-report-7.32-2017.json`: research-report layout based on ГОСТ 7.32-2017. Use only when that standard applies to the assignment.
 - A user-provided profile: use when the user supplies a department, university, or course configuration.
 
 When the appropriate standard or local requirement is unclear, use the supplied department profile and state the unresolved choice. The bibliography profile does not automatically rewrite raw references into complete GOST descriptions.
@@ -55,17 +55,22 @@ Use these source rules:
 - Put the bibliography beneath a configured structural heading as a Markdown list, one complete source description per item. The FIT GOST profile prints entries without list markers and applies the profile's paragraph indent. Keep the source text in the required citation standard yourself; the converter does not infer missing metadata or rewrite it.
 - Use regular Markdown for emphasis, inline code, links, and ordered/unordered lists. Image paths are relative to the source `.md` file.
 
-Use the bundled `examples/report-template.md` as the short starter or `examples/full-report-template.md` as the complete syntax reference. Remove all instructional placeholders before delivery. A standalone `---` is treated as a page break by this converter.
+Use `<REPO_ROOT>\examples\report-template.md` as the short starter or `<REPO_ROOT>\examples\full-report-template.md` as the complete syntax reference. Remove all instructional placeholders before delivery. A standalone `---` is treated as a page break by this converter.
 
 ## 4. Convert
 
-Run the bundled wrapper from PowerShell. `fit-academic` is the default profile; use `fit-gost-bibliography` or `gost-report` when appropriate. For a user-provided profile, pass its path with `--config`.
+Run the canonical library from the repository root. Select the JSON profile with `--config`.
 
 ```powershell
-python "$env:USERPROFILE\plugins\md-to-docx-academic\scripts\convert.py" "C:\path\to\report.md" --profile fit-academic --vars "C:\path\to\report-vars.json" -o "C:\path\to\report.docx"
+Push-Location '<REPO_ROOT>'
+try {
+    python -m md2docx 'C:\path\to\report.md' --config .\configs\fit-academic.json --vars 'C:\path\to\report-vars.json' -o 'C:\path\to\report.docx'
+} finally {
+    Pop-Location
+}
 ```
 
-Omit `--vars` when the Markdown metadata contains the required values. The wrapper accepts `--config <path>` for a custom JSON profile. A missing image is a conversion error; fix the source path or asset and rerun. Do not silently remove the image or its caption.
+Omit `--vars` when the Markdown metadata contains the required values. Substitute another profile path or pass a custom JSON profile. A missing image is a conversion error; fix the source path or asset and rerun. Do not silently remove the image or its caption.
 
 ## 5. Review the result
 

@@ -62,7 +62,7 @@ Use `examples/report-template.md` as the short starter or `examples/full-report-
 Run from the repository root. For the department profile:
 
 ```powershell
-md2docx .\report.md --config .\configs\fit-academic.json --vars .\report-vars.json -o .\out\report.docx
+python -m md2docx .\report.md --config .\configs\fit-academic.json --vars .\report-vars.json -o .\out\report.docx
 ```
 
 Substitute the selected profile and the matching variables JSON as needed. A missing image is a conversion error; fix the source path or asset and rerun. Do not silently remove the image or its caption.
