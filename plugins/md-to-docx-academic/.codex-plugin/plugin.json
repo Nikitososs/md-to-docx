@@ -1,6 +1,6 @@
 {
   "name": "md-to-docx-academic",
-  "version": "0.1.3+codex.20260923114540",
+  "version": "0.1.3+codex.20260923121614",
   "description": "Skill for using the canonical academic Markdown-to-DOCX converter in the md-to-docx repository.",
   "author": {
     "name": "Local developer"

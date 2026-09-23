@@ -221,10 +221,10 @@ class Converter:
         if "left_indent_cm" in style:
             fmt.left_indent = Cm(float(style["left_indent_cm"]))
         p.alignment = ALIGN.get(style.get("align", "justify"), WD_ALIGN_PARAGRAPH.JUSTIFY)
-        if style.get("keep_with_next"):
-            fmt.keep_with_next = True
-        if style.get("keep_together"):
-            fmt.keep_together = True
+        if "keep_with_next" in style:
+            fmt.keep_with_next = bool(style["keep_with_next"])
+        if "keep_together" in style:
+            fmt.keep_together = bool(style["keep_together"])
         if style.get("page_break_before"):
             fmt.page_break_before = True
 
@@ -298,7 +298,8 @@ class Converter:
         pattern = labels.get("pattern", {"figure": "Рисунок {n} – {title}", "table": "Таблица {n} – {title}", "listing": "Листинг {n} – {title}"}[kind])
         p = self.doc.add_paragraph()
         self._format_paragraph(p, {"align": align, "first_line_indent_cm": 0, "space_before_pt": 0,
-                                   "space_after_pt": 0, "keep_with_next": kind != "figure"})
+                                   "space_after_pt": 0,
+                                   "keep_with_next": labels.get("keep_with_next", kind == "listing" or kind == "table")})
         self._text(pattern.format(n=number, title=title), p, bold=bool(labels.get("bold", False)), size=labels.get("size_pt"))
 
     def _image(self, token: Token, source_dir: Path, title: str | None = None) -> None:
@@ -633,12 +634,16 @@ class Converter:
                 continue
             if t.type == "fence":
                 if pending_caption and pending_caption[0] == "listing": self._caption("listing", pending_caption[1], "left"); pending_caption = None
-                p = self.doc.add_paragraph()
-                self._format_paragraph(p, {"align":"left", "first_line_indent_cm":0, "left_indent_cm":float(self.config.get("code", {}).get("left_indent_cm", 0)),
-                                           "line_spacing":self.config.get("code", {}).get("line_spacing", 1.0),
-                                           "space_before_pt":self.config.get("code", {}).get("space_before_pt", 0), "space_after_pt":self.config.get("code", {}).get("space_after_pt", 0)})
-                self._text(t.content.rstrip("\n"), p, code=True, size=self.config.get("code", {}).get("size_pt", 11), font=self.config.get("code", {}).get("font", "DejaVu Sans"))
-                p.paragraph_format.keep_together = True
+                code_style = self.config.get("code", {})
+                code_lines = t.content.rstrip("\n").split("\n")
+                for line_index, line in enumerate(code_lines):
+                    p = self.doc.add_paragraph()
+                    self._format_paragraph(p, {"align":"left", "first_line_indent_cm":0, "left_indent_cm":float(code_style.get("left_indent_cm", 0)),
+                                               "line_spacing":code_style.get("line_spacing", 1.0),
+                                               "space_before_pt":code_style.get("space_before_pt", 0) if line_index == 0 else 0,
+                                               "space_after_pt":code_style.get("space_after_pt", 0) if line_index == len(code_lines) - 1 else 0,
+                                               "keep_together":code_style.get("keep_together", False)})
+                    self._text(line, p, code=True, size=code_style.get("size_pt", 11), font=code_style.get("font", "DejaVu Sans"))
                 body_content_seen = True
                 i += 1; continue
             if t.type == "table_open":

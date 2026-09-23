@@ -52,6 +52,7 @@ Use these source rules:
 - Write a figure as a standalone paragraph: `![Caption text](relative/image.png)`. The alt text becomes the numbered figure caption below the image.
 - Immediately before a pipe table, write `Таблица: Caption text` in a paragraph of its own. The converter creates a real Word table and places a numbered caption above it.
 - Immediately before a fenced code block, write `Листинг: Caption text` in a paragraph of its own.
+- Long code listings may continue across pages. The caption stays with the start of the listing; avoid forcing a long listing to fit on one page, since that can leave a large blank area.
 - Put the bibliography beneath a configured structural heading as a Markdown list, one complete source description per item. The FIT GOST profile prints entries without list markers and applies the profile's paragraph indent. Keep the source text in the required citation standard yourself; the converter does not infer missing metadata or rewrite it.
 - Use regular Markdown for emphasis, inline code, links, and ordered/unordered lists. Image paths are relative to the source `.md` file.
 
