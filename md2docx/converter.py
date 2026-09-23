@@ -644,6 +644,7 @@ class Converter:
         self._set_east_asia(run._element.get_or_add_rPr(), toc.get("font", "Times New Roman"))
         begin = OxmlElement("w:fldChar")
         begin.set(qn("w:fldCharType"), "begin")
+        begin.set(qn("w:dirty"), "true")
         instr = OxmlElement("w:instrText")
         instr.set(qn("xml:space"), "preserve")
         switches = ["TOC", f'\\o "1-{int(toc.get("levels", 3))}"']

@@ -54,6 +54,7 @@
     "hyperlinks": true,
     "hide_page_numbers_in_web_layout": true,
     "use_outline_levels": true,
+    "update_on_windows": true,
     "font": "Times New Roman",
     "size_pt": 14,
     "line_spacing": 1.5,
