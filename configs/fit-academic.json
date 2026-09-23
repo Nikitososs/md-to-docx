@@ -314,17 +314,14 @@
         ]
       },
       {
-        "text": "Проверил\t{supervisor_title}",
+        "text": "Проверил\t\t{supervisor_title}",
         "align": "left",
         "size_pt": 14,
         "line_spacing": 1.0,
         "left_indent_cm": 5.503,
-        "tab_stops_cm": [
-          9.0
-        ],
         "runs": [
           {
-            "text": "Проверил\t"
+            "text": "Проверил\t\t"
           },
           {
             "field": "supervisor_title",
