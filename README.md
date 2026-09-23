@@ -58,10 +58,10 @@ convert_file(
 ```markdown
 {{json
 {
-  "discipline": "Системы управления базами данных (СУБД PostgreSQL 15)",
-  "title": "Полнотекстовый поиск (Full-Text Search) и ранжирование релевантности в СУБД PostgreSQL",
+  "discipline": "Название дисциплины",
+  "title": "Тема работы",
   "student": {"name": "Иванов Иван Иванович", "course": "3", "group": "Группа-001", "program": "00.00.00 Название направления"},
-  "teacher": {"title": "доц., к.н.", "name": "Петрова Анна Сергеевна"},
+  "teacher": {"title": "доцент, кандидат наук", "name": "Петров Пётр Петрович"},
   "institution": {"short": "ОмГТУ", "department": "ПМиФИ", "year": "2026"},
   "work": {"type": "Домашнее задание"}
 }

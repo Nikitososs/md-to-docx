@@ -31,10 +31,10 @@ At the very top of the Markdown source, use a fixed JSON metadata block so the c
 ```markdown
 {{json
 {
-  "discipline": "Системы управления базами данных (СУБД PostgreSQL 15)",
-  "title": "Полнотекстовый поиск и ранжирование релевантности",
+  "discipline": "Название дисциплины",
+  "title": "Тема работы",
   "student": {"name": "Иванов Иван Иванович", "course": "3", "group": "Группа-001", "program": "00.00.00 Название направления"},
-  "teacher": {"title": "доц., к.н.", "name": "Петрова Анна Сергеевна"},
+  "teacher": {"title": "доцент, кандидат наук", "name": "Петров Пётр Петрович"},
   "institution": {"short": "ОмГТУ", "department": "ПМиФИ", "year": "2026"},
   "work": {"type": "Домашнее задание"}
 }
