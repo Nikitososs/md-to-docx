@@ -36,12 +36,12 @@ At the very top of the Markdown source, use a fixed JSON metadata block so the c
   "student": {"name": "Иванов Иван Иванович", "course": "3", "group": "Группа-001", "program": "00.00.00 Название направления"},
   "teacher": {"title": "доц., к.н.", "name": "Петрова Анна Сергеевна"},
   "institution": {"short": "ОмГТУ", "department": "ПМиФИ", "year": "2026"},
-  "work": {"type": "Домашнее задание", "variant": "1"}
+  "work": {"type": "Домашнее задание"}
 }
 }}
 ```
 
-The JSON block must be the first content in the file and must contain valid JSON between the `{{json` and `}}` lines. The parser reads explicit fields; it does not infer course, group, names, or titles from prose. The FIT title page follows the IDZ template, including its first-page header with institution and department, its work/student/reviewer fields, underlined signature slots, and city/year footer. YAML and free-text metadata are not supported. Values in the optional `--vars` file override Markdown metadata. Never fill unknown placeholders with guesses.
+The JSON block must be the first content in the file and must contain valid JSON between the `{{json` and `}}` lines. The parser reads explicit fields; it does not infer course, group, names, or titles from prose. `title` is the work's topic; `work.type` is its kind. Add `work.variant` only when the assignment has a variant number; otherwise the separate variant line is omitted. The FIT title page follows the IDZ template, including its first-page header with institution and department, its work/student/reviewer fields, underlined signature slots, and city/year footer. YAML and free-text metadata are not supported. Values in the optional `--vars` file override Markdown metadata. Never fill unknown placeholders with guesses.
 
 Use these source rules:
 

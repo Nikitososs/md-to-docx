@@ -228,6 +228,7 @@
       },
       {
         "text": "Вариант {variant}",
+        "if_field": "variant",
         "align": "center",
         "size_pt": 14,
         "line_spacing": 1.5

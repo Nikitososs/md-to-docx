@@ -354,6 +354,9 @@ class Converter:
         if not cover:
             return
         for part in cover.get("parts", cover.get("paragraphs", [])):
+            conditional_field = part.get("if_field")
+            if conditional_field and not str(self.variables.get(conditional_field, "")).strip():
+                continue
             if part.get("type", "paragraph") == "table":
                 rows = part.get("rows", [])
                 if not rows:
