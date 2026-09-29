@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import xml.etree.ElementTree as ET
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -12,11 +13,14 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.section import WD_SECTION
 from docx.shared import Cm, Pt, RGBColor
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
+from mdit_py_plugins.dollarmath import dollarmath_plugin
+from latex2mathml.converter import convert as latex_to_mathml
+import mathml2omml
 
 from .metadata import _SafeFormat, _frontmatter, _normalize_metadata
 
@@ -92,7 +96,7 @@ class Converter:
         self._in_bibliography = False
         self._configure_page()
         self._configure_styles()
-        self.md = MarkdownIt("commonmark").enable("table")
+        self.md = MarkdownIt("commonmark").enable("table").use(dollarmath_plugin)
 
     def _configure_page(self) -> None:
         page = self.config.get("page", {})
@@ -286,6 +290,58 @@ class Converter:
                 p.add_run().add_break()
             elif t.type == "image":
                 self._text(t.content, p, link_url=link_url)
+            elif t.type == "math_inline":
+                p._p.append(self._math_element(t.content, display=False))
+
+    @staticmethod
+    def _math_element(source: str, *, display: bool):
+        """Convert TeX math to a native Office Math (OMML) element."""
+        try:
+            mathml = latex_to_mathml(source, display="block" if display else "inline")
+            mathml_root = ET.fromstring(mathml)
+            math_namespace = "http://www.w3.org/1998/Math/MathML"
+            for parent in list(mathml_root.iter()):
+                for child in list(parent):
+                    if child.tag != f"{{{math_namespace}}}mo" or (child.text or "").strip() != "mod":
+                        continue
+                    index = list(parent).index(child)
+                    siblings = list(parent)
+                    if index and siblings[index - 1].tag != f"{{{math_namespace}}}mspace":
+                        parent.insert(index, ET.Element(f"{{{math_namespace}}}mspace", {"width": "0.22em"}))
+                        index += 1
+                    siblings = list(parent)
+                    if index + 1 < len(siblings) and siblings[index + 1].tag != f"{{{math_namespace}}}mspace":
+                        parent.insert(index + 1, ET.Element(f"{{{math_namespace}}}mspace", {"width": "0.22em"}))
+            parents = {child: parent for parent in mathml_root.iter() for child in parent}
+            for space in list(mathml_root.iter(f"{{{math_namespace}}}mspace")):
+                width = space.attrib.get("width", "0")
+                if width.endswith("em"):
+                    count = max(1, min(4, round(float(width[:-2]) * 3)))
+                else:
+                    count = 1
+                replacement = ET.Element(f"{{{math_namespace}}}mtext")
+                replacement.text = "\u00a0" * count
+                replacement.tail = space.tail
+                parent = parents[space]
+                parent[list(parent).index(space)] = replacement
+            ET.register_namespace("", "http://www.w3.org/1998/Math/MathML")
+            mathml = ET.tostring(mathml_root, encoding="unicode")
+            converted = mathml2omml.convert(mathml)
+            # mathml2omml emits the `m:` prefix without a namespace declaration.
+            wrapper = (
+                '<root xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" '
+                'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                f"{converted}</root>"
+            )
+            root = parse_xml(wrapper)
+            equation = root[0]
+            if display:
+                paragraph_math = OxmlElement("m:oMathPara")
+                paragraph_math.append(equation)
+                return paragraph_math
+            return equation
+        except Exception as exc:
+            raise ValueError(f"Could not convert TeX formula to a Word equation: {source!r}: {exc}") from exc
 
     def _new_text_paragraph(self, text_tokens: list[Token] | None, style=None, heading=False):
         p = self.doc.add_paragraph()
@@ -567,6 +623,19 @@ class Converter:
                 self._in_bibliography = in_bibliography
                 i += 3; continue
             if in_toc:
+                i += 1
+                continue
+            if t.type == "math_block":
+                math_style = self.config.get("math", {})
+                p = self.doc.add_paragraph()
+                self._format_paragraph(p, {
+                    "align": math_style.get("display_align", "center"),
+                    "first_line_indent_cm": 0,
+                    "space_before_pt": math_style.get("display_space_before_pt", 6),
+                    "space_after_pt": math_style.get("display_space_after_pt", 6),
+                })
+                p._p.append(self._math_element(t.content.strip(), display=True))
+                body_content_seen = True
                 i += 1
                 continue
             if t.type == "paragraph_open":
