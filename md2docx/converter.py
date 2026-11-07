@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 from pathlib import Path
@@ -41,6 +42,42 @@ def token_text(tokens: list[Token] | None) -> str:
         elif token.type == "softbreak":
             out.append(" ")
     return "".join(out)
+
+
+def _is_latin_letter(char: str) -> bool:
+    return char.isalpha() and unicodedata.name(char, "").startswith("LATIN ")
+
+
+def _latin_italic_spans(text: str) -> list[tuple[str, bool]]:
+    """Split text into runs, italicizing words written in the Latin script."""
+    spans: list[tuple[str, bool]] = []
+    plain_start = 0
+    i = 0
+    while i < len(text):
+        if not _is_latin_letter(text[i]):
+            i += 1
+            continue
+        if plain_start < i:
+            spans.append((text[plain_start:i], False))
+        start = i
+        i += 1
+        while i < len(text):
+            char = text[i]
+            if _is_latin_letter(char) or char.isdigit() or char == "_" or unicodedata.category(char).startswith("M"):
+                i += 1
+                continue
+            # Keep punctuation inside a Latin technical name (for example,
+            # pg_catalog.pg_class), but do not italicize the hyphen in
+            # mixed-language words such as "SQL-запрос".
+            if char in "./:+#-" and i + 1 < len(text) and _is_latin_letter(text[i + 1]):
+                i += 1
+                continue
+            break
+        spans.append((text[start:i], True))
+        plain_start = i
+    if plain_start < len(text):
+        spans.append((text[plain_start:], False))
+    return spans
 
 
 def _sentence_case_heading(tokens: list[Token], title: str, enabled: bool) -> None:
@@ -234,6 +271,94 @@ class Converter:
         if style.get("page_break_before"):
             fmt.page_break_before = True
 
+    def _add_list_numbering(self, kind: str, start: int, depth: int) -> int:
+        """Create a native Word numbering instance for one Markdown list."""
+        numbering = self.doc.part.numbering_part.element
+        abstract_ids = [int(node.get(qn("w:abstractNumId"))) for node in numbering.findall(qn("w:abstractNum"))]
+        num_ids = [int(node.get(qn("w:numId"))) for node in numbering.findall(qn("w:num"))]
+        abstract_id = max(abstract_ids, default=-1) + 1
+        num_id = max(num_ids, default=0) + 1
+
+        options = self.config.get("lists", {})
+        left_cm = float(options.get("left_indent_cm", 0.75)) + depth * float(options.get("nested_indent_cm", 0.5))
+        hanging_cm = float(options.get("hanging_indent_cm", 0.5))
+        left_twips = int(Cm(left_cm).twips)
+        hanging_twips = int(Cm(hanging_cm).twips)
+
+        abstract = OxmlElement("w:abstractNum")
+        abstract.set(qn("w:abstractNumId"), str(abstract_id))
+        multi_level = OxmlElement("w:multiLevelType")
+        multi_level.set(qn("w:val"), "singleLevel")
+        abstract.append(multi_level)
+        level = OxmlElement("w:lvl")
+        level.set(qn("w:ilvl"), "0")
+        for tag, value in (("w:start", str(max(1, start) if kind == "ordered" else 1)),
+                           ("w:numFmt", "decimal" if kind == "ordered" else "bullet")):
+            node = OxmlElement(tag)
+            node.set(qn("w:val"), value)
+            level.append(node)
+        suffix = OxmlElement("w:suff")
+        suffix.set(qn("w:val"), "tab")
+        level.append(suffix)
+        for tag, value in (("w:lvlText", "%1." if kind == "ordered" else options.get("bullet_character", "•")),
+                           ("w:lvlJc", "left")):
+            node = OxmlElement(tag)
+            node.set(qn("w:val"), value)
+            level.append(node)
+        ppr = OxmlElement("w:pPr")
+        tabs = OxmlElement("w:tabs")
+        tab = OxmlElement("w:tab")
+        tab.set(qn("w:val"), "num")
+        tab.set(qn("w:pos"), str(left_twips))
+        tabs.append(tab)
+        ppr.append(tabs)
+        indent = OxmlElement("w:ind")
+        indent.set(qn("w:left"), str(left_twips))
+        indent.set(qn("w:hanging"), str(hanging_twips))
+        ppr.append(indent)
+        level.append(ppr)
+        if kind == "bullet":
+            rpr = OxmlElement("w:rPr")
+            fonts = OxmlElement("w:rFonts")
+            list_font = self.config.get("body", {}).get("font", "Times New Roman")
+            fonts.set(qn("w:ascii"), list_font)
+            fonts.set(qn("w:hAnsi"), list_font)
+            rpr.append(fonts)
+            level.append(rpr)
+        abstract.append(level)
+        numbering.append(abstract)
+
+        number = OxmlElement("w:num")
+        number.set(qn("w:numId"), str(num_id))
+        abstract_ref = OxmlElement("w:abstractNumId")
+        abstract_ref.set(qn("w:val"), str(abstract_id))
+        number.append(abstract_ref)
+        numbering.append(number)
+        return num_id
+
+    @staticmethod
+    def _set_list_numbering(paragraph, num_id: int) -> None:
+        ppr = paragraph._p.get_or_add_pPr()
+        numpr = OxmlElement("w:numPr")
+        level = OxmlElement("w:ilvl")
+        level.set(qn("w:val"), "0")
+        number = OxmlElement("w:numId")
+        number.set(qn("w:val"), str(num_id))
+        numpr.extend((level, number))
+        ppr.insert(0, numpr)
+
+    def _format_list_paragraph(self, paragraph, depth: int, num_id: int | None = None) -> None:
+        options = self.config.get("lists", {})
+        hanging_cm = float(options.get("hanging_indent_cm", 0.5))
+        left_cm = float(options.get("left_indent_cm", 0.75)) + depth * float(options.get("nested_indent_cm", 0.5))
+        self._format_paragraph(paragraph, {
+            "first_line_indent_cm": -hanging_cm,
+            "left_indent_cm": left_cm,
+            "space_after_pt": options.get("space_after_pt", 0),
+        })
+        if num_id is not None:
+            self._set_list_numbering(paragraph, num_id)
+
     def _text(self, text: str, p, *, bold=False, italic=False, code=False, size=None, font=None,
               link_url=None, preserve_nbsp=False) -> None:
         if not code:
@@ -247,10 +372,11 @@ class Converter:
                 text = text.replace("\u00a0", " ")
         # The department sample requests italics for Latin text; keep code exempt.
         use_latin_italic = bool(self.config.get("formatting", {}).get("italicize_latin", True)) and not code and not self._in_bibliography
-        parts = re.split(r"([A-Za-z]+(?:[A-Za-z0-9_./:+#-]*[A-Za-z0-9_+#])?)", text) if use_latin_italic else [text]
-        for part in filter(None, parts):
+        parts = _latin_italic_spans(text) if use_latin_italic else [(text, False)]
+        for part, is_latin in parts:
+            if not part:
+                continue
             r = p.add_run(part)
-            is_latin = use_latin_italic and bool(re.fullmatch(r"[A-Za-z][A-Za-z0-9_./:+#-]*", part))
             r.bold = bold
             r.italic = italic or is_latin
             r.font.name = font or (self.config.get("code", {}).get("font", "DejaVu Sans") if code else self.config.get("body", {}).get("font", "Times New Roman"))
@@ -656,7 +782,10 @@ class Converter:
                 if raw.startswith("<pagebreak>"):
                     self.doc.add_page_break(); body_content_seen = True; i += 3; continue
                 p = self.doc.add_paragraph()
-                if in_bibliography:
+                active_list = list_stack[-1] if list_stack and list_stack[-1].get("item_active") else None
+                if active_list and not in_bibliography:
+                    self._format_list_paragraph(p, active_list["depth"])
+                elif in_bibliography:
                     bib = self.config.get("bibliography", {})
                     body = self.config.get("body", {})
                     self._format_paragraph(p, {
@@ -672,16 +801,26 @@ class Converter:
                 body_content_seen = True
                 i += 3; continue
             if t.type in ("bullet_list_open", "ordered_list_open"):
-                list_stack.append({"kind": "ordered" if t.type == "ordered_list_open" else "bullet", "counter": int(t.attrGet("start") or 1) - 1}); i += 1; continue
+                kind = "ordered" if t.type == "ordered_list_open" else "bullet"
+                start = int(t.attrGet("start") or 1)
+                depth = len(list_stack)
+                num_id = self._add_list_numbering(kind, start, depth)
+                list_stack.append({"kind": kind, "counter": start - 1, "num_id": num_id,
+                                   "depth": depth, "item_active": False})
+                i += 1; continue
             if t.type in ("bullet_list_close", "ordered_list_close"):
                 if list_stack: list_stack.pop()
                 i += 1; continue
             if t.type == "list_item_open":
+                frame = list_stack[-1] if list_stack else {
+                    "kind": "bullet", "counter": 0, "num_id": self._add_list_numbering("bullet", 1, 0),
+                    "depth": 0, "item_active": False,
+                }
+                frame["counter"] += 1
+                frame["item_active"] = True
                 j = i + 1
-                while j < len(tokens) and tokens[j].type not in ("list_item_close", "list_item_open"):
+                while j < len(tokens) and tokens[j].type not in ("list_item_close", "list_item_open", "bullet_list_open", "ordered_list_open"):
                     if tokens[j].type == "inline":
-                        frame = list_stack[-1] if list_stack else {"kind": "bullet", "counter": 0}
-                        frame["counter"] += 1
                         p = self.doc.add_paragraph()
                         if in_bibliography:
                             bib = self.config.get("bibliography", {})
@@ -693,19 +832,22 @@ class Converter:
                                 "left_indent_cm": float(bib.get("left_indent_cm", 0)),
                             })
                             marker = f"{frame['counter']}. " if bib.get("numbered", True) else ""
+                            self._text(marker, p)
                         else:
-                            self._format_paragraph(p, {"first_line_indent_cm": 0, "left_indent_cm": 0.75 * max(1, len(list_stack))})
-                            marker = f"{frame['counter']}. " if frame["kind"] == "ordered" else "• "
+                            self._format_list_paragraph(p, frame["depth"], frame["num_id"])
                         self._in_bibliography = in_bibliography
-                        self._text(marker, p)
                         self._inline(tokens[j].children, p)
                         body_content_seen = True
                         i = j + 1
                         break
                     j += 1
                 else:
-                    i = j
+                    i = j if j < len(tokens) and tokens[j].type in ("bullet_list_open", "ordered_list_open") else j + 1
                 continue
+            if t.type == "list_item_close":
+                if list_stack:
+                    list_stack[-1]["item_active"] = False
+                i += 1; continue
             if t.type == "fence":
                 if pending_caption and pending_caption[0] == "listing": self._caption("listing", pending_caption[1], "left"); pending_caption = None
                 code_style = self.config.get("code", {})
