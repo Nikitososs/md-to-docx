@@ -359,7 +359,7 @@ class Converter:
         if num_id is not None:
             self._set_list_numbering(paragraph, num_id)
 
-    def _text(self, text: str, p, *, bold=False, italic=False, code=False, size=None, font=None,
+    def _text(self, text: str, p, *, bold=False, italic=False, code=False, code_inline=False, size=None, font=None,
               link_url=None, preserve_nbsp=False) -> None:
         if not code:
             formatting = self.config.get("formatting", {})
@@ -370,8 +370,13 @@ class Converter:
                 text = text.replace("“", "«").replace("”", "»")
             if not preserve_nbsp:
                 text = text.replace("\u00a0", " ")
-        # The department sample requests italics for Latin text; keep code exempt.
-        use_latin_italic = bool(self.config.get("formatting", {}).get("italicize_latin", True)) and not code and not self._in_bibliography
+        # Inline code keeps its monospace font but still follows Latin italic rules;
+        # fenced source listings remain upright code.
+        use_latin_italic = (
+            bool(self.config.get("formatting", {}).get("italicize_latin", True))
+            and (not code or code_inline)
+            and not self._in_bibliography
+        )
         parts = _latin_italic_spans(text) if use_latin_italic else [(text, False)]
         for part, is_latin in parts:
             if not part:
@@ -410,7 +415,8 @@ class Converter:
                 link_url = None
             elif t.type in ("text", "code_inline", "html_inline"):
                 self._text(t.content, p, bold="strong" in active, italic="em" in active,
-                           code=t.type == "code_inline", size=self.config.get("code", {}).get("size_pt") if t.type == "code_inline" else None,
+                           code=t.type == "code_inline", code_inline=t.type == "code_inline",
+                           size=self.config.get("code", {}).get("size_pt") if t.type == "code_inline" else None,
                            link_url=link_url)
             elif t.type in ("softbreak", "hardbreak"):
                 p.add_run().add_break()

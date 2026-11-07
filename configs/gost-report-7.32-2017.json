@@ -151,7 +151,7 @@
     ]
   },
   "formatting": {
-    "italicize_latin": false,
+    "italicize_latin": true,
     "normalize_quotes_to_russian": true,
     "convert_em_dash_to_en_dash": true
   },
