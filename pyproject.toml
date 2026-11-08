@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "md2docx-academic"
 version = "0.1.0"
-description = "Deterministic Markdown to academic DOCX converter driven by JSON styles"
+description = "Markdown to academic DOCX converter with native Word lists and ГОСТ-aware JSON styles"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

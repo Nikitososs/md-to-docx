@@ -1,11 +1,11 @@
 ---
 name: md-to-docx-academic
-description: Convert structured academic Markdown reports into DOCX with the project's converter and JSON style profiles.
+description: Convert academic Markdown to DOCX with JSON style profiles, native Word lists, Unicode Latin italics, and ГОСТ-aware layout. Use when preparing a Word document from structured Markdown and local images.
 ---
 
 # Convert an academic Markdown report to DOCX
 
-Use the canonical converter and profiles from the active `md-to-docx` project. Locate the repository root from the current workspace: it contains `pyproject.toml`, the `md2docx/` package, and `configs/`. If that repository is not open in the workspace, ask the user to open it; do not assume a drive, user profile, or fixed installation directory. This plugin contains only this skill and its required manifest; it must not carry a second copy of the Python library, profiles, or examples. Python 3.10+ and the project's declared dependencies (`markdown-it-py`, `mdit-py-plugins`, `python-docx`, `Pillow`, `latex2mathml`, `mathml2omml`) must be available. Follow these Markdown source conventions. Keep the author's meaning, numbers, formulas, and reference details unchanged. Do not invent missing student, reviewer, course, or publication data.
+Use the repository converter and the Markdown source conventions below. Keep the author's meaning, numbers, formulas, and reference details unchanged. Do not invent missing student, reviewer, course, or publication data.
 
 ## 1. Inspect the inputs
 
@@ -55,29 +55,21 @@ Use these source rules:
 - Immediately before a fenced code block, write `Листинг: Caption text` in a paragraph of its own.
 - Each source line in a fenced listing becomes its own Word paragraph. Long listings may continue across pages; the caption stays with the first code line. The converter does not keep the whole listing on one page.
 - Write inline TeX math as `$...$` and display math as `$$...$$` on separate lines. These are the supported delimiters; `\(...\)` and `\[...\]` are not parsed. Both forms become native editable Word equations (OMML), not images. Display equations are centered by default; formulas inside backticks remain code. Equation numbering is not automatic. Invalid or unsupported TeX raises a conversion error so source is not silently printed as raw TeX.
+- Under ГОСТ 7.32-2017, Markdown unordered lists render as native Word dash lists, and ordered lists use Arabic numerals followed by `)`. List markers begin at the 1.25 cm paragraph indent; item text and wrapped lines align in a column. The `lists` profile settings control the marker, hanging indent, nested-list offset, and spacing.
 - Put the bibliography beneath a configured structural heading as a Markdown list, one complete source description per item. The FIT GOST profile prints entries without list markers and applies the profile's paragraph indent. It preserves entry text and punctuation; prepare complete descriptions in the required citation standard yourself. The profile does not infer missing metadata or rewrite references into GOST form.
-- Use regular Markdown for emphasis, inline code, links, and ordered/unordered lists. Image paths are relative to the source `.md` file.
+- Use regular Markdown for emphasis, inline code, links, and ordered/unordered lists. Body lists become native Word lists with editable numbering/bullets; ordered lists honor their starting number and nested lists are indented. Bibliography list behavior remains controlled by its profile. When `formatting.italicize_latin` is enabled, Latin-script words (including extended Unicode Latin letters) are italicized in prose and inline code; fenced code listings and bibliography entries are exempt. Image paths are relative to the source `.md` file.
 
-Use `examples/report-template.md` as the short starter or `examples/full-report-template.md` as the complete syntax reference. Resolve these paths from the repository root. Remove all instructional placeholders before delivery. A standalone `---` is treated as a page break by this converter.
+Use `examples/report-template.md` as the short starter or `examples/full-report-template.md` as the complete syntax reference. Remove all instructional placeholders before delivery. A standalone `---` is treated as a page break by this converter.
 
 ## 4. Convert
 
-Run the canonical library from the repository root. If the current directory is elsewhere inside the repository, locate the root with `git rev-parse --show-toplevel`. Select the JSON profile with `--config`.
+Run from the repository root. For the department profile:
 
 ```powershell
-$repoRoot = (git rev-parse --show-toplevel).Trim()
-$inputPath = (Resolve-Path '.\report.md').Path
-$varsPath = (Resolve-Path '.\report-vars.json').Path
-$outputPath = Join-Path $repoRoot 'out\report.docx'
-Push-Location $repoRoot
-try {
-    python -m md2docx $inputPath --config .\configs\fit-academic.json --vars $varsPath -o $outputPath
-} finally {
-    Pop-Location
-}
+python -m md2docx .\report.md --config .\configs\fit-academic.json --vars .\report-vars.json -o .\out\report.docx
 ```
 
-Omit `--vars` when the Markdown metadata contains the required values. Substitute another profile path or pass a custom JSON profile. A missing image is a conversion error; fix the source path or asset and rerun. Do not silently remove the image or its caption.
+Substitute the selected profile and the matching variables JSON as needed. A missing image is a conversion error; fix the source path or asset and rerun. Do not silently remove the image or its caption.
 
 ## 5. Review the result
 
@@ -85,4 +77,4 @@ Open the DOCX and verify title-page fields, headings, tables, captions, images, 
 
 ## Supported source blocks and known limits
 
-The converter handles paragraphs; headings up to level 3; configured structural headings; automatic insertion of `ОСНОВНАЯ ЧАСТЬ` after the introduction when needed; automatic clickable Word tables of contents when enabled by the profile; automatic level 2 numbering and uppercase-to-sentence-case conversion when enabled by the profile; inline bold/italic/code and links; ordered and unordered lists; Markdown pipe tables; standalone images; fenced code; inline and display TeX math as native OMML equations; and the configured bibliography section. The Windows API attempts to refresh Word fields when enabled and Microsoft Word/`pywin32` are available; otherwise update fields in Word with `Ctrl+A`, `F9`. It does not process YAML metadata, arbitrary raw HTML, footnotes, automatic level 3 numbering, equation numbering, citations from reference keys, OCR, or automatic GOST metadata generation.
+The converter handles paragraphs; headings up to level 3; configured structural headings; automatic insertion of `ОСНОВНАЯ ЧАСТЬ` after the introduction when needed; automatic clickable Word tables of contents when enabled by the profile; automatic level 2 numbering and uppercase-to-sentence-case conversion when enabled by the profile; inline bold/italic/code and links; native ordered and unordered Word lists with profile-specific GOST markers, paragraph-indent alignment, and nested indentation; Markdown pipe tables; standalone images; fenced code; inline and display TeX math as native OMML equations; and the configured bibliography section. The Windows API attempts to refresh Word fields when enabled and Microsoft Word/`pywin32` are available; otherwise update fields in Word with `Ctrl+A`, `F9`. It does not process YAML metadata, arbitrary raw HTML, footnotes, automatic level 3 numbering, equation numbering, citations from reference keys, OCR, or automatic GOST metadata generation.

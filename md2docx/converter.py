@@ -300,7 +300,9 @@ class Converter:
         suffix = OxmlElement("w:suff")
         suffix.set(qn("w:val"), "tab")
         level.append(suffix)
-        for tag, value in (("w:lvlText", "%1." if kind == "ordered" else options.get("bullet_character", "•")),
+        ordered_marker = f"%1{options.get('ordered_suffix', '.')}"
+        bullet_marker = options.get("bullet_character", "•")
+        for tag, value in (("w:lvlText", ordered_marker if kind == "ordered" else bullet_marker),
                            ("w:lvlJc", "left")):
             node = OxmlElement(tag)
             node.set(qn("w:val"), value)
