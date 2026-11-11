@@ -20,6 +20,7 @@ Use the repository converter and the Markdown source conventions below. Keep the
 - `configs/fit-academic.json`: supplied ФИТ requirements and title-page structure.
 - `configs/fit-gost-bibliography-7.0.100-2018.json`: ФИТ body/title layout and a separate bibliography section profile for ГОСТ Р 7.0.100-2018.
 - `configs/gost-report-7.32-2017.json`: research-report layout based on ГОСТ 7.32-2017. Use only when that standard applies to the assignment.
+- `configs/fit-cover-gost-7.32-2017.json`: body text, margins, pagination, and paragraph/list indents from ГОСТ 7.32-2017 with the FIT title page.
 - A user-provided profile: use when the user supplies a department, university, or course configuration.
 
 When the appropriate standard or local requirement is unclear, use the supplied department profile and state the unresolved choice. The bibliography profile does not automatically rewrite raw references into complete GOST descriptions.
@@ -55,7 +56,7 @@ Use these source rules:
 - Immediately before a fenced code block, write `Листинг: Caption text` in a paragraph of its own.
 - Each source line in a fenced listing becomes its own Word paragraph. Long listings may continue across pages; the caption stays with the first code line. The converter does not keep the whole listing on one page.
 - Write inline TeX math as `$...$` and display math as `$$...$$` on separate lines. These are the supported delimiters; `\(...\)` and `\[...\]` are not parsed. Both forms become native editable Word equations (OMML), not images. Display equations are centered by default; formulas inside backticks remain code. Equation numbering is not automatic. Invalid or unsupported TeX raises a conversion error so source is not silently printed as raw TeX.
-- Under ГОСТ 7.32-2017, Markdown unordered lists render as native Word dash lists, and ordered lists use Arabic numerals followed by `)`. List markers begin at the 1.25 cm paragraph indent; item text and wrapped lines align in a column. The `lists` profile settings control the marker, hanging indent, nested-list offset, and spacing.
+- Under ГОСТ 7.32-2017, Markdown unordered lists render as native Word dash lists, and ordered lists use Arabic numerals followed by `)`. Body paragraphs use the configured 1.25 cm first-line indent. Lists have separate settings: `left_indent_cm` places the list marker, `hanging_indent_cm` controls the marker-to-text hanging indent, and `nested_indent_cm` shifts nested levels. Set these explicitly because list paragraphs do not inherit the body paragraph indent.
 - Put the bibliography beneath a configured structural heading as a Markdown list, one complete source description per item. The FIT GOST profile prints entries without list markers and applies the profile's paragraph indent. It preserves entry text and punctuation; prepare complete descriptions in the required citation standard yourself. The profile does not infer missing metadata or rewrite references into GOST form.
 - Use regular Markdown for emphasis, inline code, links, and ordered/unordered lists. Body lists become native Word lists with editable numbering/bullets; ordered lists honor their starting number and nested lists are indented. Bibliography list behavior remains controlled by its profile. When `formatting.italicize_latin` is enabled, Latin-script words (including extended Unicode Latin letters) are italicized in prose and inline code; fenced code listings and bibliography entries are exempt. Image paths are relative to the source `.md` file.
 
@@ -70,6 +71,8 @@ python -m md2docx .\report.md --config .\configs\fit-academic.json --vars .\repo
 ```
 
 Substitute the selected profile and the matching variables JSON as needed. A missing image is a conversion error; fix the source path or asset and rerun. Do not silently remove the image or its caption.
+
+For ГОСТ 7.32-2017 body formatting with the FIT title page, select `configs/fit-cover-gost-7.32-2017.json` in the `--config` option.
 
 ## 5. Review the result
 

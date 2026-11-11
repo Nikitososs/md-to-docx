@@ -1,0 +1,335 @@
+{
+  "name": "FIT title page + GOST 7.32-2017 body",
+  "extends": "gost-report-7.32-2017.json",
+  "standard": {
+    "id": "ГОСТ 7.32-2017",
+    "scope": "Основной текст и нумерация по ГОСТ 7.32-2017; титульный лист по профилю ФИТ."
+  },
+  "page": {
+    "width_cm": 21,
+    "height_cm": 29.7,
+    "top_cm": 2,
+    "bottom_cm": 2,
+    "left_cm": 3,
+    "right_cm": 1.5,
+    "footer_distance_cm": 1.25
+  },
+  "body": {
+    "font": "Times New Roman",
+    "size_pt": 14,
+    "line_spacing": 1.5,
+    "first_line_indent_cm": 1.25,
+    "space_before_pt": 0,
+    "space_after_pt": 0
+  },
+  "lists": {
+    "left_indent_cm": 1.25,
+    "hanging_indent_cm": 0,
+    "nested_indent_cm": 0,
+    "space_after_pt": 0,
+    "bullet_character": "–",
+    "ordered_suffix": ")"
+  },
+  "cover": {
+    "start_body_section": true,
+    "page": {
+      "width_cm": 21.006,
+      "height_cm": 29.693,
+      "top_cm": 2.0,
+      "bottom_cm": 1.951,
+      "left_cm": 2.999,
+      "right_cm": 1.018,
+      "header_distance_cm": 1.27,
+      "footer_distance_cm": 1.27
+    },
+    "parts": [
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "{work_type}",
+        "align": "center",
+        "bold": true,
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "«{title}»",
+        "align": "center",
+        "bold": true,
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "по дисциплине «{discipline}»",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "Вариант {variant}",
+        "if_field": "variant",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5,
+        "space_before_pt": 12
+      },
+      {
+        "text": "",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.5,
+        "left_indent_cm": 6.244
+      },
+      {
+        "text": "Студента\t\t{student_name}",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.0,
+        "left_indent_cm": 5.5,
+        "runs": [
+          {
+            "text": "Студента\t\t"
+          },
+          {
+            "field": "student_name",
+            "underline": true
+          },
+          {
+            "text": "        ",
+            "underline": true,
+            "preserve_nbsp": true
+          }
+        ]
+      },
+      {
+        "text": "Курс\t{course}\t\tГруппа\t{group}",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.5,
+        "left_indent_cm": 5.503,
+        "runs": [
+          {
+            "text": "Курс\t\t"
+          },
+          {
+            "field": "course",
+            "underline": true
+          },
+          {
+            "text": "\t\tГруппа\t"
+          },
+          {
+            "field": "group",
+            "underline": true
+          }
+        ]
+      },
+      {
+        "text": "Направление\t{program}",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.5,
+        "left_indent_cm": 8.888,
+        "first_line_indent_cm": -3.387,
+        "runs": [
+          {
+            "text": "Направление\t"
+          },
+          {
+            "field": "program",
+            "underline": true
+          }
+        ]
+      },
+      {
+        "text": "Проверил\t\t{supervisor_title}",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.0,
+        "left_indent_cm": 5.503,
+        "runs": [
+          {
+            "text": "Проверил\t\t"
+          },
+          {
+            "field": "supervisor_title",
+            "underline": true
+          },
+          {
+            "text": "                  ",
+            "underline": true,
+            "preserve_nbsp": true
+          }
+        ]
+      },
+      {
+        "text": "должность",
+        "align": "left",
+        "size_pt": 9,
+        "line_spacing": 1.5,
+        "left_indent_cm": 11.3
+      },
+      {
+        "text": "{supervisor_name}",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.0,
+        "left_indent_cm": 9.0,
+        "runs": [
+          {
+            "field": "supervisor_name",
+            "underline": true
+          },
+          {
+            "text": "                                ",
+            "underline": true,
+            "preserve_nbsp": true
+          }
+        ]
+      },
+      {
+        "text": "Выполнил",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.0,
+        "left_indent_cm": 5.503,
+        "runs": [
+          {
+            "text": "Выполнил\t"
+          },
+          {
+            "text": "                                             ",
+            "underline": true,
+            "preserve_nbsp": true
+          }
+        ]
+      },
+      {
+        "text": "дата, подпись студента",
+        "align": "left",
+        "size_pt": 9,
+        "line_spacing": 1.5,
+        "left_indent_cm": 11.499
+      },
+      {
+        "text": "",
+        "align": "left",
+        "size_pt": 14,
+        "line_spacing": 1.0,
+        "left_indent_cm": 9.0,
+        "runs": [
+          {
+            "text": "                                                       ",
+            "underline": true,
+            "preserve_nbsp": true
+          }
+        ]
+      },
+      {
+        "text": "дата, подпись преподавателя",
+        "align": "left",
+        "size_pt": 9,
+        "line_spacing": 1.0,
+        "left_indent_cm": 10.6
+      }
+    ],
+    "header": [
+      {
+        "text": "Министерство науки и высшего образования РФ",
+        "align": "center",
+        "size_pt": 12,
+        "line_spacing": 1.0,
+        "space_before_pt": 1
+      },
+      {
+        "text": "федеральное государственное автономное образовательное учреждение высшего образования",
+        "align": "center",
+        "size_pt": 12,
+        "line_spacing": 1.0,
+        "space_before_pt": 3,
+        "space_after_pt": 12
+      },
+      {
+        "text": "«{university_full}»",
+        "align": "center",
+        "size_pt": 12,
+        "line_spacing": 1.0,
+        "left_indent_cm": 3.634
+      },
+      {
+        "text": "Факультет информационных технологий и компьютерных систем",
+        "align": "center",
+        "size_pt": 12,
+        "line_spacing": 1.0,
+        "space_before_pt": 12
+      },
+      {
+        "text": "Кафедра «{department}»",
+        "align": "center",
+        "size_pt": 12,
+        "line_spacing": 1.0,
+        "space_before_pt": 12
+      }
+    ],
+    "footer": [
+      {
+        "text": "г. {city}",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      },
+      {
+        "text": "{year} г.",
+        "align": "center",
+        "size_pt": 14,
+        "line_spacing": 1.5
+      }
+    ]
+  }
+}
