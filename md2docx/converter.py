@@ -353,13 +353,35 @@ class Converter:
         options = self.config.get("lists", {})
         hanging_cm = float(options.get("hanging_indent_cm", 0.5))
         left_cm = float(options.get("left_indent_cm", 0.75)) + depth * float(options.get("nested_indent_cm", 0.5))
+        first_line_cm = options.get("first_line_indent_cm")
         self._format_paragraph(paragraph, {
-            "first_line_indent_cm": -hanging_cm,
-            "left_indent_cm": left_cm,
+            "first_line_indent_cm": float(first_line_cm) if first_line_cm is not None else -hanging_cm,
+            "left_indent_cm": 0 if first_line_cm is not None else left_cm,
             "space_after_pt": options.get("space_after_pt", 0),
         })
         if num_id is not None:
             self._set_list_numbering(paragraph, num_id)
+        # Keep the list paragraph's text column explicit in the paragraph itself.
+        # Word can otherwise inherit a 0.5 cm hanging indent from the paragraph
+        # style linked to the numbering definition, even when the profile sets
+        # hanging_indent_cm to zero.
+        ppr = paragraph._p.get_or_add_pPr()
+        indent = ppr.find(qn("w:ind"))
+        if indent is None:
+            indent = OxmlElement("w:ind")
+            ppr.append(indent)
+        if first_line_cm is not None:
+            indent.set(qn("w:left"), "0")
+            indent.set(qn("w:firstLine"), str(int(Cm(float(first_line_cm)).twips)))
+            indent.attrib.pop(qn("w:hanging"), None)
+        else:
+            indent.set(qn("w:left"), str(int(Cm(left_cm).twips)))
+            indent.attrib.pop(qn("w:hanging"), None)
+        if first_line_cm is None and hanging_cm:
+            indent.set(qn("w:hanging"), str(int(Cm(hanging_cm).twips)))
+            indent.attrib.pop(qn("w:firstLine"), None)
+        elif first_line_cm is None:
+            indent.set(qn("w:firstLine"), "0")
 
     def _text(self, text: str, p, *, bold=False, italic=False, code=False, code_inline=False, size=None, font=None,
               link_url=None, preserve_nbsp=False) -> None:
