@@ -31,10 +31,23 @@
     "ordered_suffix": ")"
   },
   "headings": {
+    "1": {
+      "space_after_pt": 0
+    },
     "3": {
       "bold": true,
       "color_hex": "000000"
     }
+  },
+  "formatting": {
+    "blank_line_after_heading_1": true,
+    "italicize_latin": true
+  },
+  "code": {
+    "font": "Times New Roman"
+  },
+  "structural_heading": {
+    "space_after_pt": 0
   },
   "cover": {
     "start_body_section": true,

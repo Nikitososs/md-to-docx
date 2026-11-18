@@ -271,6 +271,27 @@ class Converter:
         if style.get("page_break_before"):
             fmt.page_break_before = True
 
+    def _heading_blank_line_enabled(self) -> bool:
+        return bool(
+            self.config.get("formatting", {}).get("blank_line_after_heading_1", False)
+        )
+
+    def _add_heading_blank_line(self) -> None:
+        """Add a real empty paragraph after a level-one heading when configured."""
+        paragraph = self.doc.add_paragraph()
+        body = self.config.get("body", {})
+        self._format_paragraph(
+            paragraph,
+            {
+                "align": "left",
+                "first_line_indent_cm": 0,
+                "left_indent_cm": 0,
+                "line_spacing": body.get("line_spacing", 1.5),
+                "space_before_pt": 0,
+                "space_after_pt": 0,
+            },
+        )
+
     def _add_list_numbering(self, kind: str, start: int, depth: int) -> int:
         """Create a native Word numbering instance for one Markdown list."""
         numbering = self.doc.part.numbering_part.element
@@ -394,12 +415,10 @@ class Converter:
                 text = text.replace("“", "«").replace("”", "»")
             if not preserve_nbsp:
                 text = text.replace("\u00a0", " ")
-        # Inline code keeps its monospace font but still follows Latin italic rules;
-        # fenced source listings remain upright code.
-        use_latin_italic = (
-            bool(self.config.get("formatting", {}).get("italicize_latin", True))
-            and (not code or code_inline)
-            and not self._in_bibliography
+        # Apply the profile's Latin-script styling consistently, including code
+        # fragments and bibliography entries; the profile controls code fonts.
+        use_latin_italic = bool(
+            self.config.get("formatting", {}).get("italicize_latin", True)
         )
         parts = _latin_italic_spans(text) if use_latin_italic else [(text, False)]
         for part, is_latin in parts:
@@ -711,6 +730,8 @@ class Converter:
                     self._format_paragraph(p, structural_style)
                     p.paragraph_format.page_break_before = bool(structural_page_break and body_content_seen)
                     self._text(auto_main_title.upper(), p, bold=self.config.get("structural_heading", {}).get("bold", False))
+                    if self._heading_blank_line_enabled():
+                        self._add_heading_blank_line()
                     body_content_seen = True
                     main_section_seen = True
                 if is_structural_heading:
@@ -725,11 +746,14 @@ class Converter:
                         p.paragraph_format.page_break_before = True
                     if toc_page_break_pending:
                         toc_page_break_pending = False
-                    self._text(title.upper(), p, bold=self.config.get("structural_heading", {}).get("bold", True))
                     in_bibliography = normalized_title in {
                         x.casefold().strip()
                         for x in self.config.get("bibliography_headings", [self.config.get("bibliography_heading", "Список использованных источников")])
                     }
+                    self._in_bibliography = in_bibliography
+                    self._text(title.upper(), p, bold=self.config.get("structural_heading", {}).get("bold", True))
+                    if self._heading_blank_line_enabled():
+                        self._add_heading_blank_line()
                     introduction_seen = normalized_title == auto_main.get("after_heading", "ВВЕДЕНИЕ").casefold().strip() or introduction_seen
                     main_section_seen = normalized_title == auto_main_title.casefold().strip() or main_section_seen
                     body_content_seen = True
@@ -769,6 +793,8 @@ class Converter:
                         self._inline(heading_tokens, p)
                     for r in p.runs:
                         if hconf.get("bold", level <= 2): r.bold = True
+                    if level == 1 and self._heading_blank_line_enabled():
+                        self._add_heading_blank_line()
                     in_bibliography = False
                     body_content_seen = True
                 if is_toc_heading:
